@@ -374,7 +374,7 @@ main#content {
 .wedstrijd-speler {
   flex: 1;
   min-width: 0;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
