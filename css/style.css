@@ -363,7 +363,7 @@ main#content {
   gap: 4px;
 }
 .wedstrijd-tijd {
-  width: 40px;
+  width: 30px;
   flex-shrink: 0;
   font-size: 0.68rem;
   color: var(--on-surface-variant);
@@ -371,7 +371,7 @@ main#content {
 .wedstrijd-speler {
   flex: 1;
   min-width: 0;
-  font-size: 0.68rem;
+  font-size: 0.60rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
