@@ -37,7 +37,26 @@ const URLS = {
 const BEWERKINGSDATUM_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vSI02lGel1v0PTsasuhZLBy70jegogINtIgPyV2WXOuMBAOlQ80Qxf47tCOHDoLk9Q8_op_ppYaikzN/pub?gid=100210522&single=true&output=csv";
 
-const ZICHTBARE_KOLOMMEN = ["Plaats", "Speler", "Gewonnen", "Verloren", "Leg winst %", "Punten"];
+const ZICHTBARE_KOLOMMEN = [
+  { naam: "Plaats", label: "Nr." },
+  { naam: "Speler", label: "Speler" },
+  { naam: "Gewonnen", label: "Gew." },
+  { naam: "Verloren", label: "Verl." },
+  { naam: "Leg winst %", label: "Winst %" },
+  { naam: "Punten", label: "Punten" }
+];
+
+// Vaste (smalle) breedte voor alles behalve Speler — Speler zelf krijgt geen
+// vaste breedte en vult daardoor automatisch de resterende ruimte op
+// (table-layout: fixed verdeelt de rest van de tabelbreedte over kolommen
+// zonder expliciete breedte).
+const KOLOM_BREEDTE = {
+  "Plaats": "30px",
+  "Gewonnen": "38px",
+  "Verloren": "38px",
+  "Leg winst %": "58px",
+  "Punten": "46px"
+};
 
 /**
  * =========================================================================
@@ -424,9 +443,9 @@ function renderRangschikking(rows) {
   const body = rows.slice(1);
 
   const kolomIndices = ZICHTBARE_KOLOMMEN
-    .map((naam) => {
-      const idx = header.findIndex((h) => h.trim().toLowerCase() === naam.toLowerCase());
-      return idx >= 0 ? { idx, naam } : null;
+    .map((kol) => {
+      const idx = header.findIndex((h) => h.trim().toLowerCase() === kol.naam.toLowerCase());
+      return idx >= 0 ? { idx, naam: kol.naam, label: kol.label } : null;
     })
     .filter(Boolean);
 
@@ -438,7 +457,10 @@ function renderRangschikking(rows) {
   const spelerPos = kolomIndices.findIndex((k) => k.naam.toLowerCase() === "speler");
 
   const table = el("table", { class: "data-table" });
-  const thead = el("thead", {}, el("tr", {}, kolomIndices.map((k) => el("th", { text: k.naam }))));
+  const thead = el("thead", {}, el("tr", {}, kolomIndices.map((k) => {
+    const breedte = KOLOM_BREEDTE[k.naam];
+    return el("th", breedte ? { text: k.label, style: `width: ${breedte}` } : { text: k.label });
+  })));
   const tbody = el("tbody");
   body.forEach((row) => {
     const tr = el("tr");
