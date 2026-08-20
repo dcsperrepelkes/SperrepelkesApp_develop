@@ -363,28 +363,31 @@ main#content {
   gap: 4px;
 }
 .wedstrijd-tijd {
-  width: 30px;
+  width: 34px;
   flex-shrink: 0;
   font-size: 0.68rem;
   color: var(--on-surface-variant);
-}
-.wedstrijd-speler {
-  flex: 1;
-  min-width: 0;
-  font-size: 0.68rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.wedstrijd-speler.speler1 { text-align: right; padding-right: 2px; }
-.wedstrijd-speler.speler2 { text-align: left; padding-left: 2px; }
+.wedstrijd-speler {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.72rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wedstrijd-speler.speler1 { text-align: right; padding-right: 4px; }
+.wedstrijd-speler.speler2 { text-align: left; padding-left: 4px; }
 .wedstrijd-speler.clickable {
   color: var(--primary);
   text-decoration: underline;
   cursor: pointer;
   background: none;
   border: none;
-  font: inherit;
+  font-family: inherit;
 }
 @media (prefers-color-scheme: dark) { .wedstrijd-speler.clickable { color: var(--secondary); } }
 
