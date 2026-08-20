@@ -74,7 +74,7 @@ body {
   border: none;
   background: transparent;
   padding: 12px 8px;
-  font-size: 0.9rem;
+  font-size: 1.8rem;
   font-weight: 500;
   color: var(--on-surface-variant);
   cursor: pointer;
@@ -239,7 +239,7 @@ main#content {
 }
 .accordion-chevron {
   flex-shrink: 0;
-  font-size: 0.9rem;
+  font-size: 1.8rem;
   color: var(--on-surface-variant);
   transition: transform 0.15s ease;
 }
@@ -472,14 +472,14 @@ table.data-table tbody td.speler-cell {
   gap: 12px;
   padding: 6px 0;
   border-bottom: 1px solid var(--outline);
-  font-size: 0.9rem;
+  font-size: 1.8rem;
 }
 .detail-label { font-weight: 600; }
 .detail-groep-titel {
   font-weight: 700;
   color: var(--primary);
   margin: 14px 0 6px;
-  font-size: 0.9rem;
+  font-size: 1.8rem;
 }
 @media (prefers-color-scheme: dark) { .detail-groep-titel { color: var(--secondary); } }
 .modal-body .wedstrijd-row { padding: 6px 0; }
