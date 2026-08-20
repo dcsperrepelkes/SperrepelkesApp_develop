@@ -1,0 +1,54 @@
+const CACHE_NAME = "sperrepelkes-shell-v20";
+const SHELL_FILES = [
+  "./",
+  "./index.html",
+  "./manifest.json",
+  "./css/style.css",
+  "./js/app.js",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png"
+];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) =>
+      // Elk bestand apart proberen cachen: als er één ontbreekt of faalt,
+      // mag dat de installatie van de rest (en dus de update) niet blokkeren.
+      // (cache.addAll() faalt namelijk volledig bij één enkele mislukking.)
+      Promise.allSettled(
+        SHELL_FILES.map((file) =>
+          fetch(file, { cache: "no-store" }).then((resp) => {
+            if (resp.ok) return cache.put(file, resp);
+          })
+        )
+      )
+    ).then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
+});
+
+// App-shell: cache-first. Data (Google Sheets CSV) gaat altijd rechtstreeks
+// via fetch() in app.js, dat zijn eigen localStorage-cache al beheert -
+// deze service worker bemoeit zich daar niet mee.
+self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return; // laat externe requests (Google Sheets) met rust
+
+  event.respondWith(
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(event.request).then((response) => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        return response;
+      }).catch(() => cached);
+    })
+  );
+});
