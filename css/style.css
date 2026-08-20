@@ -365,13 +365,13 @@ main#content {
 .wedstrijd-tijd {
   width: 42px;
   flex-shrink: 0;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: var(--on-surface-variant);
 }
 .wedstrijd-speler {
   flex: 1;
   min-width: 0;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -393,7 +393,7 @@ main#content {
   flex-shrink: 0;
   text-align: center;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
 }
 
 /* ---------- Tabellen (rangschikking / generiek) ---------- */
