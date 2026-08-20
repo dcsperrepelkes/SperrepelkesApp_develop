@@ -14,7 +14,7 @@ const CACHE_GELDIGHEID_MINUTEN = 30;
 // automatisch elke 30 minuten). Zet op true tijdens het testen om altijd
 // meteen te kunnen forceren. Geldt enkel voor Home — op Kalender en
 // Rangschikking blijft de knop altijd zichtbaar.
-const TOON_VERVERSKNOP_HOME = false;
+const TOON_VERVERSKNOP_HOME = true;
 
 const REEKSEN = ["A", "B", "C", "D"];
 const REEKS_LABEL = { A: "Reeks A", B: "Reeks B", C: "Reeks C", D: "Reeks D" };
@@ -595,7 +595,7 @@ function kiesSponsorVanDeWeek(sponsors) {
 }
 
 /** Een uitklapbaar kaartje: dichtgeklapt toont het enkel titel + samenvatting. */
-function buildAccordionCard(titel, samenvatting, bodyNode, { icoon = "", samenvattingKlasse = "accordion-samenvatting" } = {}) {
+function buildAccordionCard(titel, samenvatting, bodyNode, { icoon = "", samenvattingKlasse = "accordion-samenvatting", chevronKlasse = "accordion-chevron" } = {}) {
   const card = el("div", { class: "accordion-card" });
   const header = el("button", { class: "accordion-header", type: "button" });
 
@@ -605,7 +605,7 @@ function buildAccordionCard(titel, samenvatting, bodyNode, { icoon = "", samenva
   if (samenvattingEl) titelblok.appendChild(samenvattingEl);
   header.appendChild(titelblok);
 
-  const chevron = el("span", { class: "accordion-chevron", text: "\u25BE" });
+  const chevron = el("span", { class: chevronKlasse, text: "\u25BE" });
   header.appendChild(chevron);
 
   const body = el("div", { class: "accordion-body hidden" }, [bodyNode]);
@@ -763,7 +763,11 @@ function renderHome(perReeks, extra) {
     if (items.length > 0) {
       kaartenboven.appendChild(buildAccordionCard(
         "Laatste nieuws", items[0].titel, buildNieuwsBody(items),
-        { icoon: "📰", samenvattingKlasse: "nieuws-samenvatting-titel" }
+        {
+          icoon: "📰",
+          samenvattingKlasse: "nieuws-samenvatting-titel",
+          chevronKlasse: "accordion-chevron accordion-chevron-groot"
+        }
       ));
     }
   }

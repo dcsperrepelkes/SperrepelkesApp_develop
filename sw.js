@@ -1,4 +1,4 @@
-const CACHE_NAME = "sperrepelkes-shell-v23";
+const CACHE_NAME = "sperrepelkes-shell-v26";
 const SHELL_FILES = [
   "./",
   "./index.html",
