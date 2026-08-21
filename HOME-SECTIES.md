@@ -90,6 +90,26 @@ Gedrag:
 - Heeft **geen enkele speler** data voor checkout **én** 180's, dan
   verschijnt de hele Nevenklassementen-kaart niet op de homepagina.
 
+### 🏅 Rankings (geen apart tabblad!)
+
+Toont, per reeks (A/B/C/D), een mini-podium met de top 3 uit die reeks
+zelf (op basis van de bestaande `Plaats`-kolom — dezelfde die ook in de
+Rangschikking-tab gebruikt wordt), plus onderaan "De Rode Lantaarn": de
+speler op de laatste plaats van die reeks.
+
+Geen aparte configuratie nodig — dit werkt automatisch zodra je
+rangschikking-sheets een `Plaats`- en `Speler`-kolom hebben (die heb je
+sowieso al).
+
+Gedrag:
+- Elke reeks krijgt zijn **eigen** podium (dus 4 aparte mini-podiums,
+  A t.e.m. D), in tegenstelling tot Nevenklassementen dat club-breed
+  combineert.
+- Heeft een reeks geen `Plaats`/`Speler`-gegevens, dan verschijnt enkel
+  die ene reeks niet — de andere blijven gewoon staan.
+- Hebben **alle 4 reeksen** geen bruikbare gegevens, dan verschijnt de
+  hele Rankings-kaart niet op de homepagina.
+
 ### Sponsor van de week (`sponsor`)
 Met kopregel — zet gewoon **al je sponsors onder elkaar**, één rij per sponsor:
 

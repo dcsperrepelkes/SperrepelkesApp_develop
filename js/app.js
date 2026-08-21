@@ -596,6 +596,27 @@ function parseRankingExtra(rows) {
 }
 
 /**
+ * Haalt Plaats + Speler op uit een rangschikking-sheet, gesorteerd op
+ * Plaats (oplopend). Gebruikt voor de Rankings-kaart (top 3 + rode
+ * lantaarn per reeks). Werkt op kolomtitel (net als de rest van de app).
+ */
+function parseReeksRanking(rows) {
+  if (rows.length === 0) return [];
+  const header = rows[0];
+  const iPlaats = header.findIndex((h) => (h || "").trim().toLowerCase() === "plaats");
+  const iSpeler = header.findIndex((h) => (h || "").trim().toLowerCase() === "speler");
+  if (iPlaats < 0 || iSpeler < 0) return [];
+
+  return rows.slice(1)
+    .map((row) => ({
+      plaats: Number((row[iPlaats] || "").trim()),
+      speler: (row[iSpeler] || "").trim()
+    }))
+    .filter((r) => r.speler && !isNaN(r.plaats))
+    .sort((a, b) => a.plaats - b.plaats);
+}
+
+/**
  * Groepeert spelers per podiumrang op basis van [veld]: alle spelers met
  * exact dezelfde (hoogste 3 verschillende) waarden komen samen in dezelfde
  * groep terecht — bv. 2 spelers met evenveel 180's staan dus allebei op
@@ -751,6 +772,34 @@ function buildPodium(groepen, eenheid) {
   return podium;
 }
 
+/** Zelfde podiumvorm als buildPodium, maar enkel medaille + naam (geen waarderegel). */
+function buildReeksPodium(top3Lijst) {
+  const podium = el("div", { class: "podium" });
+  if (top3Lijst.length === 0) return podium;
+
+  const plek = (persoon, rang) => {
+    const kaart = el("div", { class: `podium-plek podium-plek-${rang}` });
+    kaart.appendChild(el("div", { class: "podium-medaille", text: rang === 1 ? "🥇" : rang === 2 ? "🥈" : "🥉" }));
+    const namenWrap = el("div", { class: "podium-namen" });
+    namenWrap.appendChild(el("div", { class: "podium-naam", text: persoon.speler }));
+    kaart.appendChild(namenWrap);
+    return kaart;
+  };
+
+  const boven = el("div", { class: "podium-boven" });
+  boven.appendChild(plek(top3Lijst[0], 1));
+  podium.appendChild(boven);
+
+  if (top3Lijst.length > 1) {
+    const onder = el("div", { class: "podium-onder" });
+    onder.appendChild(plek(top3Lijst[1], 2));
+    if (top3Lijst.length > 2) onder.appendChild(plek(top3Lijst[2], 3));
+    podium.appendChild(onder);
+  }
+
+  return podium;
+}
+
 function ploegSamenvatting(map) {
   if (map["Volgende wedstrijd"] && map["Volgende wedstrijd datum"]) {
     return `Volgende: ${map["Volgende wedstrijd"]} (${map["Volgende wedstrijd datum"]})`;
@@ -803,12 +852,17 @@ async function loadHome(forceRefresh) {
     perReeks[r] = parseKalender(result.rows);
   }));
 
-  // Rangschikking van elke reeks ophalen voor de Ranking-sectie (checkout/180's, kolom Q/R).
-  let alleSpelersRanking = [];
+  // Rangschikking van elke reeks ophalen: nodig voor zowel Nevenklassementen
+  // (checkout/180's, club-breed) als de Rankings-kaart (top 3 per reeks).
+  const rangschikkingPerReeks = {};
   await Promise.all(REEKSEN.map(async (r) => {
     const result = await fetchSheet("RANGSCHIKKING", r, forceRefresh);
-    if (result.ok) alleSpelersRanking = alleSpelersRanking.concat(parseRankingExtra(result.rows));
+    rangschikkingPerReeks[r] = result.ok ? result.rows : [];
   }));
+  let alleSpelersRanking = [];
+  REEKSEN.forEach((r) => {
+    alleSpelersRanking = alleSpelersRanking.concat(parseRankingExtra(rangschikkingPerReeks[r]));
+  });
 
   // Optionele extra secties ophalen (enkel wat geconfigureerd is).
   const extra = {};
@@ -824,10 +878,10 @@ async function loadHome(forceRefresh) {
     errorBanner.classList.remove("hidden");
   }
 
-  renderHome(perReeks, extra, alleSpelersRanking);
+  renderHome(perReeks, extra, alleSpelersRanking, rangschikkingPerReeks);
 }
 
-function renderHome(perReeks, extra, alleSpelersRanking) {
+function renderHome(perReeks, extra, alleSpelersRanking, rangschikkingPerReeks) {
   homeView.innerHTML = "";
   const wrap = el("div", { class: "home-content" });
 
@@ -957,6 +1011,41 @@ function renderHome(perReeks, extra, alleSpelersRanking) {
       kaarten.appendChild(buildAccordionCard(
         "Nevenklassementen", "", body,
         { icoon: "🏆", titelKlasse: "accordion-titel accordion-titel-groot-gecentreerd" }
+      ));
+    }
+  }
+
+  // ---------- Rankings: top 3 per reeks + rode lantaarn ----------
+  {
+    const reeksBlokken = REEKSEN
+      .map((r) => {
+        const lijst = parseReeksRanking(rangschikkingPerReeks[r] || []);
+        if (lijst.length === 0) return null;
+        const laatste = lijst.reduce((max, cur) => (cur.plaats > max.plaats ? cur : max), lijst[0]);
+        return { reeks: r, top3: lijst.slice(0, 3), laatste };
+      })
+      .filter(Boolean);
+
+    if (reeksBlokken.length > 0) {
+      const body = el("div");
+
+      reeksBlokken.forEach((blok, i) => {
+        if (i !== 0) body.appendChild(el("hr", { class: "speeldag-divider" }));
+        body.appendChild(el("div", { class: "ranking-sectie-titel", text: `${blok.reeks}-Reeks` }));
+        body.appendChild(buildReeksPodium(blok.top3));
+
+        const lantaarn = el("div", { class: "rode-lantaarn" });
+        lantaarn.appendChild(el("span", { class: "rode-lantaarn-icoon", text: "🏮" }));
+        lantaarn.appendChild(el("span", { class: "rode-lantaarn-tekst" }, [
+          el("span", { text: "De Rode Lantaarn: " }),
+          el("span", { class: "rode-lantaarn-naam", text: blok.laatste.speler })
+        ]));
+        body.appendChild(lantaarn);
+      });
+
+      kaarten.appendChild(buildAccordionCard(
+        "Rankings", "", body,
+        { icoon: "🏅", titelKlasse: "accordion-titel accordion-titel-groot-gecentreerd" }
       ));
     }
   }
