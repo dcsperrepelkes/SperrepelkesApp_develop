@@ -2,7 +2,7 @@
 
 De homepagina toont sinds deze update, naast "Volgende speeldag", ook een
 reeks **optionele** uitklapbare kaartjes: Laatste nieuws, Sperrepelkesploeg,
-Sperrepelkes CUP, 180's, Hoogste checkout, en een Sponsor-banner onderaan.
+Sperrepelkes CUP, Ranking (checkout/180's), en een Sponsor-banner onderaan.
 
 **Elke sectie is optioneel.** Heb je een tabblad nog niet aangemaakt (of
 laat je de placeholder-URL in `config.js` staan), dan verschijnt die sectie
@@ -16,8 +16,10 @@ kiezen of en wanneer je die activeert.
 2. Publiceer dat tabblad als CSV: `Bestand > Delen > Publiceren op web` →
    kies het specifieke tabblad → formaat "Kommagescheiden waarden (.csv)".
 3. Plak de gegenereerde URL in `js/app.js`, bovenaan bij `EXTRA_URLS`, bij
-   de juiste sleutel (`nieuws`, `ploeg`, `cup`, `achttienen`, `checkout`,
-   of `sponsor`).
+   de juiste sleutel (`nieuws`, `ploeg`, `cup`, of `sponsor`).
+
+De **Ranking**-sectie werkt anders dan de rest: die heeft **geen eigen
+tabblad** nodig — zie verderop.
 
 ## Kolomstructuur per tabblad
 
@@ -56,25 +58,33 @@ Laat een rij gewoon weg als je die info (nog) niet hebt.
 | Locatie | Ons lokaal |
 | Info | Inschrijven kan tot 1 maart |
 
-### 🎯 180's (`achttienen`)
-Met kopregel:
+### 🏆 Ranking (geen apart tabblad!)
 
-| Speler | Aantal |
-|---|---|
-| Jan Peeters | 4 |
-| Piet Janssens | 3 |
+De Ranking-kaart (podium met top 3 hoogste checkout + top 3 meeste 180's)
+haalt zijn data **rechtstreeks uit de 4 bestaande rangschikking-sheets**
+(Reeks A, B, C, D) die je toch al gebruikt voor de Rangschikking-tab.
 
-De speler(s) met het hoogste aantal worden als "leider(s)" getoond
-(ex aequo mag).
+Voeg in **elk van de 4 rangschikking-tabbladen** twee extra kolommen toe,
+op een vaste positie:
 
-### 🔥 Hoogste checkout (`checkout`)
-Met kopregel:
+- **Kolom Q** (17de kolom): hoogste uitworp (checkout) van die speler
+- **Kolom R** (18de kolom): aantal keer 180 gegooid door die speler
 
-| Speler | Uitworp | Datum |
-|---|---|---|
-| Jan Peeters | 156 | 12/07/2026 |
+Dit werkt op basis van de kolom**positie**, niet op een kolomtitel — zorg
+dus dat Q en R in elk van de 4 sheets effectief die gegevens bevatten (een
+kopregel erboven mag, maar wordt niet gebruikt om de kolom te vinden).
 
-`Datum` is optioneel.
+Gedrag:
+- De top 3 wordt **club-breed** berekend, over alle 4 reeksen heen
+  samengeteld — niet per reeks apart.
+- Podiumvorm: 1e plaats bovenaan, 2e links- en 3e rechtsonder.
+- Hebben meerdere spelers exact dezelfde waarde, dan wordt hun onderlinge
+  volgorde willekeurig bepaald; zijn er daardoor meer dan 3 kandidaten voor
+  de top 3, dan blijft het bij 3 namen op het podium.
+- Heeft geen enkele speler een waarde voor checkout (of voor 180's), dan
+  verdwijnt enkel dat ene podium — het andere blijft gewoon staan.
+- Heeft **geen enkele speler** data voor checkout **én** 180's, dan
+  verschijnt de hele Ranking-kaart niet op de homepagina.
 
 ### Sponsor van de week (`sponsor`)
 Met kopregel — zet gewoon **al je sponsors onder elkaar**, één rij per sponsor:

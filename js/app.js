@@ -14,7 +14,7 @@ const CACHE_GELDIGHEID_MINUTEN = 30;
 // automatisch elke 30 minuten). Zet op true tijdens het testen om altijd
 // meteen te kunnen forceren. Geldt enkel voor Home — op Kalender en
 // Rangschikking blijft de knop altijd zichtbaar.
-const TOON_VERVERSKNOP_HOME = false;
+const TOON_VERVERSKNOP_HOME = true;
 
 const REEKSEN = ["A", "B", "C", "D"];
 const REEKS_LABEL = { A: "Reeks A", B: "Reeks B", C: "Reeks C", D: "Reeks D" };
@@ -74,20 +74,25 @@ const KOLOM_BREEDTE = {
  *                 (bv. "Volgende wedstrijd" | "Sperrepelkes A - KDC Leiestreek")
  *   - cup:        2 kolommen zonder kopregel: label, waarde
  *                 (bv. "Volgende datum" | "14/03/2026")
- *   - achttienen: Speler, Aantal
- *   - checkout:   Speler, Uitworp, Datum (Datum optioneel)
  *   - sponsor:    Naam, Tekst, Website, Afbeelding (allemaal optioneel
  *                 behalve Naam; Afbeelding = directe beeld-URL, bv. via
  *                 imgur.com; eerste rij met een Naam wordt getoond)
+ *
+ *  De "Ranking"-sectie (hoogste checkout / meeste 180's) heeft GEEN eigen
+ *  tabblad — die data wordt rechtstreeks uit de 4 bestaande
+ *  rangschikking-sheets (A/B/C/D) gehaald, kolom Q (hoogste uitworp) en
+ *  kolom R (aantal 180's). Zie RANKING_KOLOM hieronder.
  * ========================================================================= */
 const EXTRA_URLS = {
   nieuws: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSI02lGel1v0PTsasuhZLBy70jegogINtIgPyV2WXOuMBAOlQ80Qxf47tCOHDoLk9Q8_op_ppYaikzN/pub?gid=762873295&single=true&output=csv",
   ploeg: "https://docs.google.com/spreadsheets/d/e/VUL-HIER-JOUW-ID-IN/pub?gid=0&single=true&output=csv",
   cup: "https://docs.google.com/spreadsheets/d/e/VUL-HIER-JOUW-ID-IN/pub?gid=0&single=true&output=csv",
-  achttienen: "https://docs.google.com/spreadsheets/d/e/VUL-HIER-JOUW-ID-IN/pub?gid=0&single=true&output=csv",
-  checkout: "https://docs.google.com/spreadsheets/d/e/VUL-HIER-JOUW-ID-IN/pub?gid=0&single=true&output=csv",
   sponsor: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSI02lGel1v0PTsasuhZLBy70jegogINtIgPyV2WXOuMBAOlQ80Qxf47tCOHDoLk9Q8_op_ppYaikzN/pub?gid=1544703726&single=true&output=csv"
 };
+
+// Kolomindices (0-gebaseerd) in de rangschikking-sheets voor de Ranking-sectie.
+// Kolom Q = 17de kolom = index 16. Kolom R = 18de kolom = index 17.
+const RANKING_KOLOM = { checkout: 16, achttienen: 17 };
 
 function urlGeconfigureerd(url) {
   return !!url && url.trim() !== "" && !url.includes("VUL-HIER");
@@ -564,24 +569,43 @@ function parseNieuws(rows) {
   return items;
 }
 
-/** Generieke leaderboard: kopregel Speler,<waardeKolom>(,Datum). */
-function parseLeaderboard(rows, waardeKolomNaam) {
-  if (rows.length === 0) return { items: [], leiders: [] };
-  const header = rows[0].map((h) => (h || "").trim().toLowerCase());
-  const iSpeler = header.indexOf("speler");
-  const iWaarde = header.indexOf(waardeKolomNaam.toLowerCase());
-  const iDatum = header.indexOf("datum");
+/**
+ * Haalt uit de RAUWE rijen van een rangschikking-sheet (header + data) de
+ * Speler-naam, hoogste uitworp (kolom Q) en aantal 180's (kolom R). Werkt
+ * puur op kolompositie (niet op headertekst), zoals gevraagd.
+ */
+function parseRankingExtra(rows) {
+  if (rows.length === 0) return [];
+  const header = rows[0];
+  const iSpeler = header.findIndex((h) => (h || "").trim().toLowerCase() === "speler");
 
-  const items = rows.slice(1).map((row) => ({
-    speler: iSpeler >= 0 ? (row[iSpeler] || "").trim() : "",
-    waarde: iWaarde >= 0 ? Number((row[iWaarde] || "").trim().replace(",", ".")) : NaN,
-    datum: iDatum >= 0 ? (row[iDatum] || "").trim() : ""
-  })).filter((it) => it.speler && !isNaN(it.waarde));
+  return rows.slice(1)
+    .map((row) => {
+      const speler = (iSpeler >= 0 ? row[iSpeler] : row[1]) || "";
+      const checkoutRaw = (row[RANKING_KOLOM.checkout] || "").trim().replace(",", ".");
+      const achttienenRaw = (row[RANKING_KOLOM.achttienen] || "").trim().replace(",", ".");
+      const checkout = checkoutRaw === "" ? null : Number(checkoutRaw);
+      const achttienen = achttienenRaw === "" ? null : Number(achttienenRaw);
+      return {
+        speler: speler.trim(),
+        checkout: checkout !== null && !isNaN(checkout) ? checkout : null,
+        achttienen: achttienen !== null && !isNaN(achttienen) ? achttienen : null
+      };
+    })
+    .filter((r) => r.speler);
+}
 
-  items.sort((a, b) => b.waarde - a.waarde);
-  const top = items.length > 0 ? items[0].waarde : null;
-  const leiders = top !== null ? items.filter((it) => it.waarde === top) : [];
-  return { items, leiders };
+/**
+ * Top 3 op basis van [veld] (dalend gesorteerd). Bij gelijke waarden wordt
+ * de onderlinge volgorde willekeurig bepaald (zoals gevraagd) — en zijn er
+ * daardoor méér dan 3 kandidaten voor de top 3, dan valt de 4e (of verdere)
+ * gewoon weg: er staan nooit meer dan 3 namen op het podium.
+ */
+function top3(spelers, veld) {
+  return spelers
+    .filter((s) => s[veld] !== null)
+    .sort((a, b) => (b[veld] - a[veld]) || (Math.random() - 0.5))
+    .slice(0, 3);
 }
 
 /** Sponsors: kopregel Naam,Tekst,Website,Afbeelding. Geeft ALLE rijen met een Naam terug (in sheet-volgorde). */
@@ -680,16 +704,34 @@ function buildLabelWaardeBody(map, volgordeKeys) {
   return wrap;
 }
 
-function buildLeaderboardBody(items, eenheid) {
-  const wrap = el("div");
-  items.slice(0, 8).forEach((it) => {
-    const label = it.datum ? `${it.speler} (${it.datum})` : it.speler;
-    wrap.appendChild(el("div", { class: "detail-row" }, [
-      el("div", { class: "detail-label", text: label }),
-      el("div", { text: `${it.waarde}${eenheid}` })
-    ]));
-  });
-  return wrap;
+/** Bouwt een podium (1e boven, 2e links-onder, 3e rechts-onder) voor een top-3-lijst. */
+function buildPodium(top3Lijst, veld, eenheid) {
+  const podium = el("div", { class: "podium" });
+  if (top3Lijst.length === 0) {
+    podium.appendChild(el("div", { class: "empty-state", text: "Nog geen gegevens." }));
+    return podium;
+  }
+
+  const plek = (persoon, rang) => {
+    const kaart = el("div", { class: `podium-plek podium-plek-${rang}` });
+    kaart.appendChild(el("div", { class: "podium-medaille", text: rang === 1 ? "🥇" : rang === 2 ? "🥈" : "🥉" }));
+    kaart.appendChild(el("div", { class: "podium-naam", text: persoon.speler }));
+    kaart.appendChild(el("div", { class: "podium-waarde", text: `${persoon[veld]}${eenheid}` }));
+    return kaart;
+  };
+
+  const boven = el("div", { class: "podium-boven" });
+  boven.appendChild(plek(top3Lijst[0], 1));
+  podium.appendChild(boven);
+
+  if (top3Lijst.length > 1) {
+    const onder = el("div", { class: "podium-onder" });
+    onder.appendChild(plek(top3Lijst[1], 2));
+    if (top3Lijst.length > 2) onder.appendChild(plek(top3Lijst[2], 3));
+    podium.appendChild(onder);
+  }
+
+  return podium;
 }
 
 function ploegSamenvatting(map) {
@@ -705,10 +747,11 @@ function cupSamenvatting(map) {
   return "Tik voor details";
 }
 
-function leiderSamenvatting(leiders, eenheid) {
-  if (leiders.length === 0) return "Nog geen gegevens";
-  const namen = leiders.map((l) => l.speler).join(", ");
-  return `${namen}: ${leiders[0].waarde}${eenheid}`;
+function rankingSamenvatting(checkoutTop3, achttienenTop3) {
+  const delen = [];
+  if (checkoutTop3.length > 0) delen.push(`🎯 ${checkoutTop3[0].speler}`);
+  if (achttienenTop3.length > 0) delen.push(`🔥 ${achttienenTop3[0].speler}`);
+  return delen.length > 0 ? delen.join("  ·  ") : "Nog geen gegevens";
 }
 
 function buildSponsorBanner(sponsor) {
@@ -750,6 +793,13 @@ async function loadHome(forceRefresh) {
     perReeks[r] = parseKalender(result.rows);
   }));
 
+  // Rangschikking van elke reeks ophalen voor de Ranking-sectie (checkout/180's, kolom Q/R).
+  let alleSpelersRanking = [];
+  await Promise.all(REEKSEN.map(async (r) => {
+    const result = await fetchSheet("RANGSCHIKKING", r, forceRefresh);
+    if (result.ok) alleSpelersRanking = alleSpelersRanking.concat(parseRankingExtra(result.rows));
+  }));
+
   // Optionele extra secties ophalen (enkel wat geconfigureerd is).
   const extra = {};
   await Promise.all(Object.entries(EXTRA_URLS).map(async ([key, url]) => {
@@ -764,10 +814,10 @@ async function loadHome(forceRefresh) {
     errorBanner.classList.remove("hidden");
   }
 
-  renderHome(perReeks, extra);
+  renderHome(perReeks, extra, alleSpelersRanking);
 }
 
-function renderHome(perReeks, extra) {
+function renderHome(perReeks, extra, alleSpelersRanking) {
   homeView.innerHTML = "";
   const wrap = el("div", { class: "home-content" });
 
@@ -864,20 +914,26 @@ function renderHome(perReeks, extra) {
     }
   }
 
-  if (extra.achttienen) {
-    const { items, leiders } = parseLeaderboard(extra.achttienen, "aantal");
-    if (items.length > 0) {
-      kaarten.appendChild(buildAccordionCard(
-        "180's", leiderSamenvatting(leiders, "x"), buildLeaderboardBody(items, "x"), { icoon: "🎯" }
-      ));
-    }
-  }
+  {
+    const checkoutTop3 = top3(alleSpelersRanking, "checkout");
+    const achttienenTop3 = top3(alleSpelersRanking, "achttienen");
 
-  if (extra.checkout) {
-    const { items, leiders } = parseLeaderboard(extra.checkout, "uitworp");
-    if (items.length > 0) {
+    if (checkoutTop3.length > 0 || achttienenTop3.length > 0) {
+      const body = el("div");
+
+      if (checkoutTop3.length > 0) {
+        body.appendChild(el("div", { class: "ranking-sectie-titel", text: "Proxy Delhaize Checkout Championship" }));
+        body.appendChild(buildPodium(checkoutTop3, "checkout", ""));
+      }
+
+      if (achttienenTop3.length > 0) {
+        if (checkoutTop3.length > 0) body.appendChild(el("hr", { class: "speeldag-divider" }));
+        body.appendChild(el("div", { class: "ranking-sectie-titel", text: "Brouwerij Huyghe 180-Trophy" }));
+        body.appendChild(buildPodium(achttienenTop3, "achttienen", "x"));
+      }
+
       kaarten.appendChild(buildAccordionCard(
-        "Hoogste checkout", leiderSamenvatting(leiders, ""), buildLeaderboardBody(items, ""), { icoon: "🔥" }
+        "Ranking", rankingSamenvatting(checkoutTop3, achttienenTop3), body, { icoon: "🏆" }
       ));
     }
   }
