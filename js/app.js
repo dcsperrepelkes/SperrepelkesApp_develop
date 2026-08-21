@@ -773,31 +773,20 @@ function buildPodium(groepen, eenheid) {
 }
 
 /** Zelfde podiumvorm als buildPodium, maar enkel medaille + naam (geen waarderegel). */
-function buildReeksPodium(top3Lijst) {
-  const podium = el("div", { class: "podium" });
-  if (top3Lijst.length === 0) return podium;
-
-  const plek = (persoon, rang) => {
-    const kaart = el("div", { class: `podium-plek podium-plek-${rang}` });
-    kaart.appendChild(el("div", { class: "podium-medaille", text: rang === 1 ? "🥇" : rang === 2 ? "🥈" : "🥉" }));
-    const namenWrap = el("div", { class: "podium-namen" });
-    namenWrap.appendChild(el("div", { class: "podium-naam", text: persoon.speler }));
-    kaart.appendChild(namenWrap);
-    return kaart;
-  };
-
-  const boven = el("div", { class: "podium-boven" });
-  boven.appendChild(plek(top3Lijst[0], 1));
-  podium.appendChild(boven);
-
-  if (top3Lijst.length > 1) {
-    const onder = el("div", { class: "podium-onder" });
-    onder.appendChild(plek(top3Lijst[1], 2));
-    if (top3Lijst.length > 2) onder.appendChild(plek(top3Lijst[2], 3));
-    podium.appendChild(onder);
-  }
-
-  return podium;
+/** Eenvoudige oplijsting i.p.v. podium: medaille + volledige naam, onder elkaar. */
+function buildReeksLijst(top3Lijst) {
+  const lijst = el("div", { class: "ranking-lijst" });
+  top3Lijst.forEach((persoon, i) => {
+    const rang = i + 1;
+    const item = el("div", { class: "ranking-lijst-item" });
+    item.appendChild(el("span", {
+      class: "ranking-lijst-medaille",
+      text: rang === 1 ? "🥇" : rang === 2 ? "🥈" : "🥉"
+    }));
+    item.appendChild(el("span", { class: "ranking-lijst-naam", text: persoon.speler }));
+    lijst.appendChild(item);
+  });
+  return lijst;
 }
 
 function ploegSamenvatting(map) {
@@ -1032,7 +1021,7 @@ function renderHome(perReeks, extra, alleSpelersRanking, rangschikkingPerReeks) 
       reeksBlokken.forEach((blok, i) => {
         if (i !== 0) body.appendChild(el("hr", { class: "speeldag-divider" }));
         body.appendChild(el("div", { class: "ranking-sectie-titel", text: `${blok.reeks}-Reeks` }));
-        body.appendChild(buildReeksPodium(blok.top3));
+        body.appendChild(buildReeksLijst(blok.top3));
 
         const lantaarn = el("div", { class: "rode-lantaarn" });
         lantaarn.appendChild(el("span", { class: "rode-lantaarn-icoon", text: "🏮" }));
@@ -1041,6 +1030,13 @@ function renderHome(perReeks, extra, alleSpelersRanking, rangschikkingPerReeks) 
           el("span", { class: "rode-lantaarn-naam", text: blok.laatste.speler })
         ]));
         body.appendChild(lantaarn);
+
+        body.appendChild(el("a", {
+          class: "rankings-link",
+          text: "Bekijk hier de volledige ranking",
+          href: "#",
+          onclick: (e) => { e.preventDefault(); gaNaarRangschikkingReeks(blok.reeks); }
+        }));
       });
 
       kaarten.appendChild(buildAccordionCard(
@@ -1092,27 +1088,36 @@ function updateReeksTabs() {
 }
 updateReeksTabs();
 
+function wisselSectie(sectie) {
+  currentSection = sectie;
+  document.querySelectorAll(".nav-item").forEach((b) => b.classList.toggle("active", b.dataset.section === sectie));
+
+  homeView.classList.toggle("hidden", currentSection !== "home");
+  kalenderView.classList.toggle("hidden", currentSection !== "kalender");
+  rangschikkingView.classList.toggle("hidden", currentSection !== "rangschikking");
+
+  const isHome = currentSection === "home";
+  reeksTabsEl.classList.toggle("hidden", isHome);
+  bewerkingsdatumEl.classList.toggle("hidden", isHome);
+  refreshBtn.classList.toggle("hidden", isHome && !TOON_VERVERSKNOP_HOME);
+  errorBanner.classList.add("hidden");
+
+  if (isHome) {
+    loadHome(false);
+  } else {
+    load(false);
+  }
+}
+
+/** Springt vanaf Home rechtstreeks naar de Rangschikking-tab van een specifieke reeks. */
+function gaNaarRangschikkingReeks(reeks) {
+  currentReeks = reeks;
+  updateReeksTabs();
+  wisselSectie("rangschikking");
+}
+
 document.querySelectorAll(".nav-item").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    currentSection = btn.dataset.section;
-    document.querySelectorAll(".nav-item").forEach((b) => b.classList.toggle("active", b === btn));
-
-    homeView.classList.toggle("hidden", currentSection !== "home");
-    kalenderView.classList.toggle("hidden", currentSection !== "kalender");
-    rangschikkingView.classList.toggle("hidden", currentSection !== "rangschikking");
-
-    const isHome = currentSection === "home";
-    reeksTabsEl.classList.toggle("hidden", isHome);
-    bewerkingsdatumEl.classList.toggle("hidden", isHome);
-    refreshBtn.classList.toggle("hidden", isHome && !TOON_VERVERSKNOP_HOME);
-    errorBanner.classList.add("hidden");
-
-    if (isHome) {
-      loadHome(false);
-    } else {
-      load(false);
-    }
-  });
+  btn.addEventListener("click", () => wisselSectie(btn.dataset.section));
 });
 
 refreshBtn.addEventListener("click", () => {

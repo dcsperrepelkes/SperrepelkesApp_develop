@@ -356,6 +356,31 @@ main#content {
 .rode-lantaarn-icoon { font-size: 1.15rem; line-height: 1; }
 .rode-lantaarn-naam { font-weight: 700; color: var(--on-surface); }
 
+.ranking-lijst {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 0 4px;
+}
+.ranking-lijst-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ranking-lijst-medaille { font-size: 1.3rem; line-height: 1; flex-shrink: 0; }
+.ranking-lijst-naam { font-weight: 700; font-size: 0.88rem; }
+
+.rankings-link {
+  display: block;
+  text-align: center;
+  margin-top: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+}
+@media (prefers-color-scheme: dark) { .rankings-link { color: var(--secondary); } }
+
 /* ---------- Home: sponsorbanner ---------- */
 .sponsor-banner {
   margin-top: 18px;
