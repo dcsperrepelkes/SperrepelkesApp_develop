@@ -93,6 +93,7 @@ const EXTRA_URLS = {
   nieuws: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSI02lGel1v0PTsasuhZLBy70jegogINtIgPyV2WXOuMBAOlQ80Qxf47tCOHDoLk9Q8_op_ppYaikzN/pub?gid=762873295&single=true&output=csv",
   kalenderPloeg: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQqiTI5mKPtJG8CsOodk8v0dfgMldct2d-dCejkMsxJtJV0cnoC4P1qbCc3LPBclNpdbKCiAwNqQKYE/pub?gid=1979734072&single=true&output=csv",
   rankingPloeg: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQqiTI5mKPtJG8CsOodk8v0dfgMldct2d-dCejkMsxJtJV0cnoC4P1qbCc3LPBclNpdbKCiAwNqQKYE/pub?gid=1333135515&single=true&output=csv",
+  rankingSpelers: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQqiTI5mKPtJG8CsOodk8v0dfgMldct2d-dCejkMsxJtJV0cnoC4P1qbCc3LPBclNpdbKCiAwNqQKYE/pub?gid=0&single=true&output=csv",
   cup: "https://docs.google.com/spreadsheets/d/e/VUL-HIER-JOUW-ID-IN/pub?gid=0&single=true&output=csv",
   sponsor: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSI02lGel1v0PTsasuhZLBy70jegogINtIgPyV2WXOuMBAOlQ80Qxf47tCOHDoLk9Q8_op_ppYaikzN/pub?gid=1544703726&single=true&output=csv"
 };
@@ -710,6 +711,205 @@ function parseRankingPloeg(rows) {
 }
 
 /**
+ * Parseert het "Ranking_Spelers"-tabblad (spelers van de Sperrepelkesploeg):
+ * Plaats, Speler, Opstellingen, Wedstrijden, Gewonnen, Verloren, Leg winst,
+ * Leg verlies, Leg Saldo, Winst %, Minste pijlen, Aantal 180, Hoogste
+ * uitworp 100+.
+ */
+function parseRankingSpelers(rows) {
+  if (rows.length === 0) return [];
+  const header = rows[0];
+  const iPlaats = kolomIndex(header, "Ranking");
+  const iSpeler = kolomIndex(header, "Speler");
+  const iOpstellingen = kolomIndex(header, "Opstellingen");
+  const iWedstrijden = kolomIndex(header, "Wedstrijden");
+  const iVerloren = kolomIndex(header, "Verloren");
+  const iLegWinst = kolomIndex(header, "Leg winst");
+  const iLegVerlies = kolomIndex(header, "Leg verlies");
+  const iLegSaldo = kolomIndex(header, "Leg Saldo");
+  const iWinstPct = kolomIndex(header, "Winst %");
+  const iMinstePijlen = kolomIndex(header, "Minste pijlen");
+  const iAantal180 = kolomIndex(header, "Aantal 180");
+  const iHoogsteUitworp = header.findIndex((h) => (h || "").trim().toLowerCase().startsWith("hoogste uitworp"));
+  if (iPlaats < 0 || iSpeler < 0) return [];
+
+  const veld = (row, idx) => (idx >= 0 ? (row[idx] || "").trim() : "");
+
+  return rows.slice(1)
+    .map((row) => ({
+      plaats: veld(row, iPlaats),
+      speler: veld(row, iSpeler),
+      opstellingen: veld(row, iOpstellingen),
+      wedstrijden: veld(row, iWedstrijden),
+      verloren: veld(row, iVerloren),
+      legWinst: veld(row, iLegWinst),
+      legVerlies: veld(row, iLegVerlies),
+      legSaldo: veld(row, iLegSaldo),
+      winstPercentage: veld(row, iWinstPct),
+      minstePijlen: veld(row, iMinstePijlen),
+      aantal180: veld(row, iAantal180),
+      hoogsteUitworp: veld(row, iHoogsteUitworp)
+    }))
+    .filter((s) => s.speler);
+}
+
+/** Spelerdetail-popup voor de Sperrepelkesploeg-spelersranking (zelfde opmaak als de reeks-rangschikking). */
+function toonPloegSpelerDetail(speler) {
+  const body = el("div");
+  const velden = [
+    ["Plaats", speler.plaats],
+    ["Opstellingen", speler.opstellingen],
+    ["Wedstrijden", speler.wedstrijden],
+    ["Verloren", speler.verloren],
+    ["Leg winst", speler.legWinst],
+    ["Leg verlies", speler.legVerlies],
+    ["Leg Saldo", speler.legSaldo],
+    ["Winst %", speler.winstPercentage],
+    ["Minste pijlen", speler.minstePijlen],
+    ["Aantal 180", speler.aantal180],
+    ["Hoogste uitworp 100+", speler.hoogsteUitworp]
+  ];
+  velden.forEach(([label, waarde]) => {
+    body.appendChild(el("div", { class: "detail-row" }, [
+      el("div", { class: "detail-label", text: label }),
+      el("div", { text: waarde || "-" })
+    ]));
+  });
+  openModal(speler.speler, body);
+}
+
+/** Spelersranking-tabel: Plaats, Speler (klikbaar), Winst %. */
+function buildSpelersRankingTabel(spelersLijst) {
+  const wrap = el("div");
+  if (spelersLijst.length === 0) return wrap;
+
+  wrap.appendChild(el("div", { class: "ranking-sectie-titel", text: "Spelersranking" }));
+
+  const table = el("table", { class: "ploeg-spelers-table" });
+  const thead = el("thead", {}, el("tr", {}, ["#", "Speler", "Winst %"].map((h) => el("th", { text: h }))));
+  const tbody = el("tbody");
+  spelersLijst.forEach((s) => {
+    tbody.appendChild(el("tr", {}, [
+      el("td", { text: s.plaats }),
+      el("td", {
+        class: "ploeg-speler-naam-cel",
+        text: s.speler,
+        onclick: () => toonPloegSpelerDetail(s)
+      }),
+      el("td", { text: s.winstPercentage })
+    ]));
+  });
+  table.appendChild(thead);
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  return wrap;
+}
+
+/** Volledige kalenderlijst van de ploeg, chronologisch, zelfde opmaak als op Home. */
+function buildPloegKalenderLijst(wedstrijden) {
+  const wrap = el("div");
+  if (wedstrijden.length === 0) return wrap;
+
+  wrap.appendChild(el("div", { class: "ranking-sectie-titel", text: "Kalender" }));
+
+  const gesorteerd = wedstrijden.slice().sort((a, b) => {
+    if (a.datum && b.datum) return a.datum - b.datum;
+    return 0;
+  });
+
+  const lijst = el("div", { class: "ploeg-kalender-lijst" });
+  gesorteerd.forEach((w, i) => {
+    const heeftUitslag = w.puntenThuis !== "" && w.puntenUit !== "";
+    const item = el("div", { class: "ploeg-kalender-item" });
+    item.appendChild(el("div", { class: "ploeg-speeldag", text: formatSpeeldagDatum(w) }));
+
+    if (heeftUitslag) {
+      const thuisWint = Number(w.puntenThuis) > Number(w.puntenUit);
+      const uitWint = Number(w.puntenUit) > Number(w.puntenThuis);
+      const thuisTekst = w.thuisploeg + (thuisWint && w.thuisploeg === SPERREPELKES_PLOEGNAAM ? " 🎉" : "");
+      const uitTekst = w.uitploeg + (uitWint && w.uitploeg === SPERREPELKES_PLOEGNAAM ? " 🎉" : "");
+      item.appendChild(buildMatchupBlok({
+        thuisTekst,
+        uitTekst,
+        scoreTekst: `${w.puntenThuis} - ${w.puntenUit}`,
+        groot: true
+      }));
+    } else {
+      item.appendChild(buildMatchupBlok({ thuisTekst: w.thuisploeg, uitTekst: w.uitploeg }));
+      const locatieTekst = w.adres || w.speellocatie;
+      if (locatieTekst) {
+        item.appendChild(el("div", { class: "ploeg-locatie", text: `Speellocatie: ${locatieTekst}` }));
+      }
+    }
+
+    lijst.appendChild(item);
+    if (i !== gesorteerd.length - 1) lijst.appendChild(el("hr", { class: "speeldag-divider" }));
+  });
+  wrap.appendChild(lijst);
+  return wrap;
+}
+
+/** Bouwt de volledige, losstaande Sperrepelkesploeg-pagina (niet in het menu). */
+function buildPloegPaginaInhoud(wedstrijden, rankingRijen, spelersLijst) {
+  const wrap = el("div", { class: "home-content" });
+
+  const terugLink = el("a", {
+    class: "ploegpagina-terug",
+    text: "\u2190 Terug naar Home",
+    href: "#",
+    onclick: (e) => { e.preventDefault(); wisselSectie("home"); }
+  });
+  wrap.appendChild(terugLink);
+  wrap.appendChild(el("div", { class: "ploegpagina-titel", text: "🏆 Sperrepelkesploeg" }));
+
+  const kaart = el("div", { class: "vs-banner" });
+
+  if (rankingRijen.length > 0) {
+    kaart.appendChild(buildStandTabel(rankingRijen));
+  }
+  if (spelersLijst.length > 0) {
+    if (rankingRijen.length > 0) kaart.appendChild(el("hr", { class: "speeldag-divider" }));
+    kaart.appendChild(buildSpelersRankingTabel(spelersLijst));
+  }
+  if (wedstrijden.length > 0) {
+    if (rankingRijen.length > 0 || spelersLijst.length > 0) kaart.appendChild(el("hr", { class: "speeldag-divider" }));
+    kaart.appendChild(buildPloegKalenderLijst(wedstrijden));
+  }
+
+  if (rankingRijen.length === 0 && spelersLijst.length === 0 && wedstrijden.length === 0) {
+    kaart.appendChild(el("div", { class: "empty-state", text: "Nog geen gegevens beschikbaar." }));
+  }
+
+  wrap.appendChild(kaart);
+  return wrap;
+}
+
+/** Haalt de 3 ploeg-sheets op en rendert de volledige Sperrepelkesploeg-pagina. */
+async function loadPloegPagina(forceRefresh) {
+  errorBanner.classList.add("hidden");
+  refreshBtn.classList.toggle("spinning", true);
+
+  const heeftAlInhoud = ploegView.querySelector(".home-content");
+  if (!heeftAlInhoud) loadingEl.classList.remove("hidden");
+
+  const [kalenderRows, rankingPloegRows, rankingSpelersRows] = await Promise.all([
+    fetchExtraSheet("kalenderPloeg", EXTRA_URLS.kalenderPloeg, forceRefresh),
+    fetchExtraSheet("rankingPloeg", EXTRA_URLS.rankingPloeg, forceRefresh),
+    fetchExtraSheet("rankingSpelers", EXTRA_URLS.rankingSpelers, forceRefresh)
+  ]);
+
+  loadingEl.classList.add("hidden");
+  refreshBtn.classList.remove("spinning");
+
+  const wedstrijden = kalenderRows ? parseKalenderPloeg(kalenderRows) : [];
+  const rankingRijen = rankingPloegRows ? parseRankingPloeg(rankingPloegRows) : [];
+  const spelersLijst = rankingSpelersRows ? parseRankingSpelers(rankingSpelersRows) : [];
+
+  ploegView.innerHTML = "";
+  ploegView.appendChild(buildPloegPaginaInhoud(wedstrijden, rankingRijen, spelersLijst));
+}
+
+/**
  * Groepeert spelers per podiumrang op basis van [veld]: alle spelers met
  * exact dezelfde (hoogste 3 verschillende) waarden komen samen in dezelfde
  * groep terecht — bv. 2 spelers met evenveel 180's staan dus allebei op
@@ -901,6 +1101,34 @@ function buildMatchupBlok({ thuisTekst, uitTekst, scoreTekst, groot = false }) {
 }
 
 /** Bouwt de volledige inhoud van het "Sperrepelkesploeg"-kaartje. */
+/** Bouwt de "Tussenstand"/"Eindstand"-titel + tabel — herbruikt op Home en de volledige ploegpagina. */
+function buildStandTabel(rankingRijen) {
+  const wrap = el("div");
+  if (rankingRijen.length === 0) return wrap;
+
+  // Eindstand pas zodra ALLE ploegen hun 18 matchen gespeeld hebben.
+  const eindstand = rankingRijen.every((r) => Number(r.matchen) === 18);
+  wrap.appendChild(el("div", { class: "ranking-sectie-titel", text: eindstand ? "Eindstand" : "Tussenstand" }));
+
+  const table = el("table", { class: "ploeg-stand-table" });
+  const thead = el("thead", {}, el("tr", {}, ["#", "Ploeg", "M", "Ptn", "Saldo"].map((h) => el("th", { text: h }))));
+  const tbody = el("tbody");
+  rankingRijen.forEach((r) => {
+    const isSperrepelkes = r.ploeg === SPERREPELKES_PLOEGNAAM;
+    tbody.appendChild(el("tr", { class: isSperrepelkes ? "ploeg-eigen-rij" : "" }, [
+      el("td", { text: r.ranking }),
+      el("td", { class: "ploeg-naam-cel", text: r.ploeg }),
+      el("td", { text: r.matchen }),
+      el("td", { text: r.punten }),
+      el("td", { text: r.saldo })
+    ]));
+  });
+  table.appendChild(thead);
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  return wrap;
+}
+
 function buildPloegBody(wedstrijden, rankingRijen) {
   const body = el("div");
   let heeftIets = false;
@@ -940,29 +1168,17 @@ function buildPloegBody(wedstrijden, rankingRijen) {
   if (rankingRijen.length > 0) {
     if (heeftIets) body.appendChild(el("hr", { class: "speeldag-divider" }));
     heeftIets = true;
-    // Eindstand pas zodra ALLE ploegen hun 18 matchen gespeeld hebben.
-    const eindstand = rankingRijen.length > 0 && rankingRijen.every((r) => Number(r.matchen) === 18);
-    body.appendChild(el("div", { class: "ranking-sectie-titel", text: eindstand ? "Eindstand" : "Tussenstand" }));
-
-    const table = el("table", { class: "ploeg-stand-table" });
-    const thead = el("thead", {}, el("tr", {}, ["#", "Ploeg", "M", "Ptn", "Saldo"].map((h) => el("th", { text: h }))));
-    const tbody = el("tbody");
-    rankingRijen.forEach((r) => {
-      const isSperrepelkes = r.ploeg === SPERREPELKES_PLOEGNAAM;
-      tbody.appendChild(el("tr", { class: isSperrepelkes ? "ploeg-eigen-rij" : "" }, [
-        el("td", { text: r.ranking }),
-        el("td", { class: "ploeg-naam-cel", text: r.ploeg }),
-        el("td", { text: r.matchen }),
-        el("td", { text: r.punten }),
-        el("td", { text: r.saldo })
-      ]));
-    });
-    table.appendChild(thead);
-    table.appendChild(tbody);
-    body.appendChild(table);
+    body.appendChild(buildStandTabel(rankingRijen));
   }
 
-  if (!heeftIets) {
+  if (heeftIets) {
+    body.appendChild(el("a", {
+      class: "rankings-link",
+      text: "Bekijk hier de volledige Sperrepelkesploeg-pagina",
+      href: "#",
+      onclick: (e) => { e.preventDefault(); gaNaarPloegPagina(); }
+    }));
+  } else {
     body.appendChild(el("div", { class: "empty-state", text: "Nog geen gegevens beschikbaar." }));
   }
 
@@ -1230,6 +1446,7 @@ function renderHome(perReeks, extra, alleSpelersRanking, rangschikkingPerReeks) 
 const kalenderView = document.getElementById("kalenderView");
 const rangschikkingView = document.getElementById("rangschikkingView");
 const homeView = document.getElementById("homeView");
+const ploegView = document.getElementById("ploegView");
 const contentToolbar = document.getElementById("contentToolbar");
 const loadingEl = document.getElementById("loading");
 const errorBanner = document.getElementById("errorBanner");
@@ -1268,15 +1485,19 @@ function wisselSectie(sectie) {
   homeView.classList.toggle("hidden", currentSection !== "home");
   kalenderView.classList.toggle("hidden", currentSection !== "kalender");
   rangschikkingView.classList.toggle("hidden", currentSection !== "rangschikking");
+  ploegView.classList.toggle("hidden", currentSection !== "ploegpagina");
 
   const isHome = currentSection === "home";
-  reeksTabsEl.classList.toggle("hidden", isHome);
-  bewerkingsdatumEl.classList.toggle("hidden", isHome);
-  refreshBtn.classList.toggle("hidden", isHome && !TOON_VERVERSKNOP_HOME);
+  const isPloegPagina = currentSection === "ploegpagina";
+  reeksTabsEl.classList.toggle("hidden", isHome || isPloegPagina);
+  bewerkingsdatumEl.classList.toggle("hidden", isHome || isPloegPagina);
+  refreshBtn.classList.toggle("hidden", (isHome || isPloegPagina) && !TOON_VERVERSKNOP_HOME);
   errorBanner.classList.add("hidden");
 
   if (isHome) {
     loadHome(false);
+  } else if (isPloegPagina) {
+    loadPloegPagina(false);
   } else {
     load(false);
   }
@@ -1289,6 +1510,11 @@ function gaNaarRangschikkingReeks(reeks) {
   wisselSectie("rangschikking");
 }
 
+/** Springt naar de volledige Sperrepelkesploeg-pagina (staat niet in het menu). */
+function gaNaarPloegPagina() {
+  wisselSectie("ploegpagina");
+}
+
 document.querySelectorAll(".nav-item").forEach((btn) => {
   btn.addEventListener("click", () => wisselSectie(btn.dataset.section));
 });
@@ -1296,6 +1522,8 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
 refreshBtn.addEventListener("click", () => {
   if (currentSection === "home") {
     loadHome(true);
+  } else if (currentSection === "ploegpagina") {
+    loadPloegPagina(true);
   } else {
     load(true);
   }

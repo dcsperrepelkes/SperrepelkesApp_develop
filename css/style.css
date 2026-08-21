@@ -456,6 +456,64 @@ table.ploeg-stand-table tr.ploeg-eigen-rij { font-weight: 700; }
 table.ploeg-stand-table tr.ploeg-eigen-rij td { color: var(--primary); }
 @media (prefers-color-scheme: dark) { table.ploeg-stand-table tr.ploeg-eigen-rij td { color: var(--secondary); } }
 
+/* ---------- Sperrepelkesploeg: volledige pagina (niet in het menu) ---------- */
+.ploegpagina-terug {
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+  margin-bottom: 14px;
+}
+@media (prefers-color-scheme: dark) { .ploegpagina-terug { color: var(--secondary); } }
+.ploegpagina-titel {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 14px;
+}
+@media (prefers-color-scheme: dark) { .ploegpagina-titel { color: var(--secondary); } }
+
+table.ploeg-spelers-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  table-layout: fixed;
+}
+table.ploeg-spelers-table th {
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 6px 4px;
+  text-align: center;
+}
+table.ploeg-spelers-table th:nth-child(1), table.ploeg-spelers-table td:nth-child(1) { width: 22px; }
+table.ploeg-spelers-table th:nth-child(2), table.ploeg-spelers-table td:nth-child(2) { width: auto; }
+table.ploeg-spelers-table th:nth-child(3), table.ploeg-spelers-table td:nth-child(3) { width: 56px; }
+table.ploeg-spelers-table th:nth-child(2) { text-align: left; padding-left: 8px; }
+table.ploeg-spelers-table td {
+  padding: 6px 4px;
+  text-align: center;
+  font-size: 0.76rem;
+  border-bottom: 1px solid var(--outline);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+td.ploeg-speler-naam-cel {
+  text-align: left;
+  padding-left: 8px;
+  color: var(--primary);
+  text-decoration: underline;
+  font-weight: 600;
+  cursor: pointer;
+}
+@media (prefers-color-scheme: dark) { td.ploeg-speler-naam-cel { color: var(--secondary); } }
+
+.ploeg-kalender-lijst { margin-top: 8px; }
+.ploeg-kalender-item { padding: 4px 0; }
+
 /* ---------- Home: sponsorbanner ---------- */
 .sponsor-banner {
   margin-top: 18px;

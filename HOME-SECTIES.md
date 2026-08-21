@@ -72,6 +72,25 @@ Beide tabbladen zijn onafhankelijk optioneel: heb je enkel de kalender
 ingevuld en de stand nog niet, dan toont de kaart gewoon de kalender-
 onderdelen zonder de stand-tabel (en omgekeerd).
 
+**Volledige Sperrepelkesploeg-pagina** (`rankingSpelers`, plus dezelfde
+`kalenderPloeg`/`rankingPloeg` als hierboven): onderaan het Home-kaartje
+staat een link "Bekijk hier de volledige Sperrepelkesploeg-pagina". Die
+opent een aparte pagina (**niet** opgenomen in de onderste menubalk,
+enkel bereikbaar via die link) met:
+
+- **De volledige stand** (zelfde tabel als op Home).
+- **De spelersranking**: kolommen Plaats, Speler, Winst % uit het
+  `rankingSpelers`-tabblad. Tik op een spelernaam voor een detailpopup met
+  alle overige kolommen (Opstellingen, Wedstrijden, Verloren, Leg winst,
+  Leg verlies, Leg Saldo, Winst %, Minste pijlen, Aantal 180, Hoogste
+  uitworp 100+).
+- **De volledige kalender**: alle wedstrijden chronologisch, elk in
+  dezelfde opmaak als op Home (met of zonder uitslag/feest-emoji).
+
+`rankingSpelers` verwacht kopregel: `RANKING, SPELER, Opstellingen,
+Wedstrijden, Gewonnen, Verloren, Leg winst, Leg verlies, Leg Saldo,
+Winst %, Minste pijlen, Aantal 180, Hoogste uitworp 100+`.
+
 ### 🏅 Sperrepelkes CUP (`cup`)
 **Zonder** kopregel, zelfde principe:
 
