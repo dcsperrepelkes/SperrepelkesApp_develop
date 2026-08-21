@@ -1577,7 +1577,28 @@ async function init() {
   await loadHome(false);
 
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("sw.js").catch(() => {});
+    // updateViaCache: "none" is cruciaal op GitHub Pages: daar kan je geen
+    // eigen cache-headers instellen, waardoor de browser sw.js zelf een
+    // tijdje in zijn HTTP-cache kan houden en dus niet eens checkt op een
+    // nieuwe versie. Dit dwingt de browser om sw.js altijd rechtstreeks
+    // van het net te halen bij het controleren op updates.
+    navigator.serviceWorker.register("sw.js", { updateViaCache: "none" })
+      .then((registratie) => {
+        // Meteen bij het openen een update-check forceren, niet wachten
+        // tot de browser dat vanzelf (soms pas na uren) doet.
+        registratie.update();
+      })
+      .catch(() => {});
+
+    // Zodra een nieuwe service worker de controle overneemt, automatisch
+    // herladen — zo krijgt de gebruiker de nieuwe versie zonder zelf iets
+    // te moeten doen (geen browsergegevens wissen, geen dubbel verversen).
+    let alHerladen = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (alHerladen) return;
+      alHerladen = true;
+      window.location.reload();
+    });
   }
 }
 
