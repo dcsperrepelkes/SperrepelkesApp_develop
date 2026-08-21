@@ -892,8 +892,8 @@ function formatSpeeldagDatum(wedstrijd) {
 }
 
 /** Bouwt de gecentreerde, onder-elkaar matchup: team1 / VS / team2 (of scores). */
-function buildMatchupBlok({ thuisTekst, uitTekst, scoreTekst }) {
-  const blok = el("div", { class: "ploeg-matchup" });
+function buildMatchupBlok({ thuisTekst, uitTekst, scoreTekst, groot = false }) {
+  const blok = el("div", { class: groot ? "ploeg-matchup ploeg-matchup-groot" : "ploeg-matchup" });
   blok.appendChild(el("div", { class: "ploeg-matchup-team", text: thuisTekst }));
   blok.appendChild(el("div", { class: "ploeg-matchup-vs", text: scoreTekst || "VS" }));
   blok.appendChild(el("div", { class: "ploeg-matchup-team", text: uitTekst }));
@@ -932,7 +932,8 @@ function buildPloegBody(wedstrijden, rankingRijen) {
     body.appendChild(buildMatchupBlok({
       thuisTekst,
       uitTekst,
-      scoreTekst: `${laatste.puntenThuis} - ${laatste.puntenUit}`
+      scoreTekst: `${laatste.puntenThuis} - ${laatste.puntenUit}`,
+      groot: true
     }));
   }
 

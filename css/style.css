@@ -386,7 +386,7 @@ main#content {
 .ploeg-speeldag {
   font-size: 0.78rem;
   color: var(--on-surface-variant);
-  text-align: center;
+  text-align: left;
   margin-bottom: 4px;
 }
 .ploeg-matchup {
@@ -407,6 +407,14 @@ main#content {
   font-weight: 700;
   color: var(--on-surface-variant);
 }
+.ploeg-matchup-groot .ploeg-matchup-team {
+  font-size: 1.05rem;
+}
+.ploeg-matchup-groot .ploeg-matchup-vs {
+  font-size: 0.95rem;
+  color: var(--primary);
+}
+@media (prefers-color-scheme: dark) { .ploeg-matchup-groot .ploeg-matchup-vs { color: var(--secondary); } }
 .ploeg-locatie {
   font-size: 0.78rem;
   color: var(--on-surface-variant);
