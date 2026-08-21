@@ -312,10 +312,16 @@ main#content {
 }
 .podium-plek-1 { border-color: var(--primary); }
 .podium-medaille { font-size: 1.4rem; line-height: 1; }
+.podium-namen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: 4px;
+}
 .podium-naam {
   font-weight: 700;
   font-size: 0.78rem;
-  margin-top: 4px;
   text-align: center;
   max-width: 110px;
   overflow: hidden;

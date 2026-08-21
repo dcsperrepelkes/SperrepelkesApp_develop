@@ -596,16 +596,26 @@ function parseRankingExtra(rows) {
 }
 
 /**
- * Top 3 op basis van [veld] (dalend gesorteerd). Bij gelijke waarden wordt
- * de onderlinge volgorde willekeurig bepaald (zoals gevraagd) — en zijn er
- * daardoor méér dan 3 kandidaten voor de top 3, dan valt de 4e (of verdere)
- * gewoon weg: er staan nooit meer dan 3 namen op het podium.
+ * Groepeert spelers per podiumrang op basis van [veld]: alle spelers met
+ * exact dezelfde (hoogste 3 verschillende) waarden komen samen in dezelfde
+ * groep terecht — bv. 2 spelers met evenveel 180's staan dus allebei op
+ * podiumplaats 1. Geeft de top 3 groepen terug (dalend op waarde), elk als
+ * { waarde, spelers: [...] }.
  */
-function top3(spelers, veld) {
-  return spelers
-    .filter((s) => s[veld] !== null)
-    .sort((a, b) => (b[veld] - a[veld]) || (Math.random() - 0.5))
-    .slice(0, 3);
+function top3Groepen(spelers, veld) {
+  const metWaarde = spelers.filter((s) => s[veld] !== null);
+
+  const groepenPerWaarde = new Map();
+  metWaarde.forEach((s) => {
+    const key = s[veld];
+    if (!groepenPerWaarde.has(key)) groepenPerWaarde.set(key, []);
+    groepenPerWaarde.get(key).push(s);
+  });
+
+  return [...groepenPerWaarde.entries()]
+    .sort((a, b) => b[0] - a[0])
+    .slice(0, 3)
+    .map(([waarde, spelersInGroep]) => ({ waarde, spelers: spelersInGroep }));
 }
 
 /** Sponsors: kopregel Naam,Tekst,Website,Afbeelding. Geeft ALLE rijen met een Naam terug (in sheet-volgorde). */
@@ -704,30 +714,32 @@ function buildLabelWaardeBody(map, volgordeKeys) {
   return wrap;
 }
 
-/** Bouwt een podium (1e boven, 2e links-onder, 3e rechts-onder) voor een top-3-lijst. */
-function buildPodium(top3Lijst, veld, eenheid) {
+/** Bouwt een podium (1e boven, 2e links-onder, 3e rechts-onder) voor top-3-groepen. */
+function buildPodium(groepen, eenheid) {
   const podium = el("div", { class: "podium" });
-  if (top3Lijst.length === 0) {
+  if (groepen.length === 0) {
     podium.appendChild(el("div", { class: "empty-state", text: "Nog geen gegevens." }));
     return podium;
   }
 
-  const plek = (persoon, rang) => {
+  const plek = (groep, rang) => {
     const kaart = el("div", { class: `podium-plek podium-plek-${rang}` });
     kaart.appendChild(el("div", { class: "podium-medaille", text: rang === 1 ? "🥇" : rang === 2 ? "🥈" : "🥉" }));
-    kaart.appendChild(el("div", { class: "podium-naam", text: persoon.speler }));
-    kaart.appendChild(el("div", { class: "podium-waarde", text: `${persoon[veld]}${eenheid}` }));
+    const namenWrap = el("div", { class: "podium-namen" });
+    groep.spelers.forEach((s) => namenWrap.appendChild(el("div", { class: "podium-naam", text: s.speler })));
+    kaart.appendChild(namenWrap);
+    kaart.appendChild(el("div", { class: "podium-waarde", text: `${groep.waarde}${eenheid}` }));
     return kaart;
   };
 
   const boven = el("div", { class: "podium-boven" });
-  boven.appendChild(plek(top3Lijst[0], 1));
+  boven.appendChild(plek(groepen[0], 1));
   podium.appendChild(boven);
 
-  if (top3Lijst.length > 1) {
+  if (groepen.length > 1) {
     const onder = el("div", { class: "podium-onder" });
-    onder.appendChild(plek(top3Lijst[1], 2));
-    if (top3Lijst.length > 2) onder.appendChild(plek(top3Lijst[2], 3));
+    onder.appendChild(plek(groepen[1], 2));
+    if (groepen.length > 2) onder.appendChild(plek(groepen[2], 3));
     podium.appendChild(onder);
   }
 
@@ -747,10 +759,10 @@ function cupSamenvatting(map) {
   return "Tik voor details";
 }
 
-function rankingSamenvatting(checkoutTop3, achttienenTop3) {
+function rankingSamenvatting(checkoutGroepen, achttienenGroepen) {
   const delen = [];
-  if (checkoutTop3.length > 0) delen.push(`🎯 ${checkoutTop3[0].speler}`);
-  if (achttienenTop3.length > 0) delen.push(`🔥 ${achttienenTop3[0].speler}`);
+  if (checkoutGroepen.length > 0) delen.push(`🎯 ${checkoutGroepen[0].spelers[0].speler}`);
+  if (achttienenGroepen.length > 0) delen.push(`🔥 ${achttienenGroepen[0].spelers[0].speler}`);
   return delen.length > 0 ? delen.join("  ·  ") : "Nog geen gegevens";
 }
 
@@ -915,25 +927,30 @@ function renderHome(perReeks, extra, alleSpelersRanking) {
   }
 
   {
-    const checkoutTop3 = top3(alleSpelersRanking, "checkout");
-    const achttienenTop3 = top3(alleSpelersRanking, "achttienen");
+    const checkoutGroepen = top3Groepen(alleSpelersRanking, "checkout");
+    const achttienenGroepen = top3Groepen(alleSpelersRanking, "achttienen");
 
-    if (checkoutTop3.length > 0 || achttienenTop3.length > 0) {
+    if (checkoutGroepen.length > 0 || achttienenGroepen.length > 0) {
       const body = el("div");
 
-      if (checkoutTop3.length > 0) {
-        body.appendChild(el("div", { class: "ranking-sectie-titel", text: "Proxy Delhaize Checkout Championship" }));
-        body.appendChild(buildPodium(checkoutTop3, "checkout", ""));
+      if (checkoutGroepen.length > 0) {
+        // Niet-brekende spatie tussen "Checkout" en "Championship": die twee
+        // woorden blijven zo altijd samen, ook als de titel moet afbreken.
+        body.appendChild(el("div", {
+          class: "ranking-sectie-titel",
+          text: "Proxy Delhaize Bambrugge Checkout\u00A0Championship"
+        }));
+        body.appendChild(buildPodium(checkoutGroepen, ""));
       }
 
-      if (achttienenTop3.length > 0) {
-        if (checkoutTop3.length > 0) body.appendChild(el("hr", { class: "speeldag-divider" }));
+      if (achttienenGroepen.length > 0) {
+        if (checkoutGroepen.length > 0) body.appendChild(el("hr", { class: "speeldag-divider" }));
         body.appendChild(el("div", { class: "ranking-sectie-titel", text: "Brouwerij Huyghe 180-Trophy" }));
-        body.appendChild(buildPodium(achttienenTop3, "achttienen", "x"));
+        body.appendChild(buildPodium(achttienenGroepen, "x"));
       }
 
       kaarten.appendChild(buildAccordionCard(
-        "Ranking", rankingSamenvatting(checkoutTop3, achttienenTop3), body, { icoon: "🏆" }
+        "Rankings", rankingSamenvatting(checkoutGroepen, achttienenGroepen), body, { icoon: "🏆" }
       ));
     }
   }
