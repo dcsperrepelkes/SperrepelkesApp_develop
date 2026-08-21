@@ -1430,7 +1430,7 @@ function renderHome(perReeks, extra, alleSpelersRanking, rangschikkingPerReeks) 
     if (wedstrijden.length > 0 || rankingRijen.length > 0) {
       kaarten.appendChild(buildAccordionCard(
         "Sperrepelkesploeg", "", buildPloegBody(wedstrijden, rankingRijen),
-        { icoon: "🏆", titelKlasse: "accordion-titel accordion-titel-groot-gecentreerd" }
+        { icoon: "💚", titelKlasse: "accordion-titel accordion-titel-groot-gecentreerd" }
       ));
     }
   }
@@ -1481,6 +1481,11 @@ updateReeksTabs();
 function wisselSectie(sectie) {
   currentSection = sectie;
   document.querySelectorAll(".nav-item").forEach((b) => b.classList.toggle("active", b.dataset.section === sectie));
+
+  // Anders zou je bij een link naar bv. Rangschikking of de ploegpagina
+  // gewoon verder blijven staan op de scrollpositie van de vorige pagina.
+  const contentEl = document.getElementById("content");
+  if (contentEl) contentEl.scrollTop = 0;
 
   homeView.classList.toggle("hidden", currentSection !== "home");
   kalenderView.classList.toggle("hidden", currentSection !== "kalender");
