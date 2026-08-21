@@ -386,17 +386,32 @@ main#content {
 .ploeg-speeldag {
   font-size: 0.78rem;
   color: var(--on-surface-variant);
+  text-align: center;
   margin-bottom: 4px;
 }
 .ploeg-matchup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 14px 0 16px;
+}
+.ploeg-matchup-team {
   font-size: 0.92rem;
   font-weight: 700;
   color: var(--on-surface);
+  text-align: center;
+}
+.ploeg-matchup-vs {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--on-surface-variant);
 }
 .ploeg-locatie {
   font-size: 0.78rem;
   color: var(--on-surface-variant);
-  margin-top: 2px;
+  text-align: center;
+  margin-bottom: 12px;
 }
 
 table.ploeg-stand-table {
@@ -413,6 +428,11 @@ table.ploeg-stand-table th {
   padding: 6px 4px;
   text-align: center;
 }
+table.ploeg-stand-table th:nth-child(1), table.ploeg-stand-table td:nth-child(1) { width: 22px; }
+table.ploeg-stand-table th:nth-child(2), table.ploeg-stand-table td:nth-child(2) { width: auto; }
+table.ploeg-stand-table th:nth-child(3), table.ploeg-stand-table td:nth-child(3) { width: 28px; }
+table.ploeg-stand-table th:nth-child(4), table.ploeg-stand-table td:nth-child(4) { width: 32px; }
+table.ploeg-stand-table th:nth-child(5), table.ploeg-stand-table td:nth-child(5) { width: 40px; }
 table.ploeg-stand-table th:nth-child(2) { text-align: left; padding-left: 8px; }
 table.ploeg-stand-table td {
   padding: 6px 4px;

@@ -644,6 +644,7 @@ function parseKalenderPloeg(rows) {
   const iPtUit = kolomIndex(header, "punten uitploeg");
   const iUit = kolomIndex(header, "Uitploeg");
   const iLocatie = kolomIndex(header, "Speellocatie");
+  const iAdres = kolomIndex(header, "Adres");
 
   return rows.slice(1)
     .map((row) => {
@@ -656,7 +657,8 @@ function parseKalenderPloeg(rows) {
         puntenThuis: (row[iPtThuis] || "").trim(),
         puntenUit: (row[iPtUit] || "").trim(),
         uitploeg: (row[iUit] || "").trim(),
-        speellocatie: (row[iLocatie] || "").trim()
+        speellocatie: (row[iLocatie] || "").trim(),
+        adres: (row[iAdres] || "").trim()
       };
     })
     .filter((w) => w.thuisploeg && w.uitploeg);
@@ -889,6 +891,15 @@ function formatSpeeldagDatum(wedstrijd) {
   return stukken.join(" - ");
 }
 
+/** Bouwt de gecentreerde, onder-elkaar matchup: team1 / VS / team2 (of scores). */
+function buildMatchupBlok({ thuisTekst, uitTekst, scoreTekst }) {
+  const blok = el("div", { class: "ploeg-matchup" });
+  blok.appendChild(el("div", { class: "ploeg-matchup-team", text: thuisTekst }));
+  blok.appendChild(el("div", { class: "ploeg-matchup-vs", text: scoreTekst || "VS" }));
+  blok.appendChild(el("div", { class: "ploeg-matchup-team", text: uitTekst }));
+  return blok;
+}
+
 /** Bouwt de volledige inhoud van het "Sperrepelkesploeg"-kaartje. */
 function buildPloegBody(wedstrijden, rankingRijen) {
   const body = el("div");
@@ -899,9 +910,10 @@ function buildPloegBody(wedstrijden, rankingRijen) {
     heeftIets = true;
     body.appendChild(el("div", { class: "ranking-sectie-titel", text: "Volgende wedstrijd" }));
     body.appendChild(el("div", { class: "ploeg-speeldag", text: formatSpeeldagDatum(volgende) }));
-    body.appendChild(el("div", { class: "ploeg-matchup", text: `${volgende.thuisploeg} VS ${volgende.uitploeg}` }));
-    if (volgende.speellocatie) {
-      body.appendChild(el("div", { class: "ploeg-locatie", text: volgende.speellocatie }));
+    body.appendChild(buildMatchupBlok({ thuisTekst: volgende.thuisploeg, uitTekst: volgende.uitploeg }));
+    const locatieTekst = volgende.adres || volgende.speellocatie;
+    if (locatieTekst) {
+      body.appendChild(el("div", { class: "ploeg-locatie", text: `Speellocatie: ${locatieTekst}` }));
     }
   }
 
@@ -917,20 +929,22 @@ function buildPloegBody(wedstrijden, rankingRijen) {
     const thuisTekst = laatste.thuisploeg + (thuisWint && laatste.thuisploeg === SPERREPELKES_PLOEGNAAM ? " 🎉" : "");
     const uitTekst = laatste.uitploeg + (uitWint && laatste.uitploeg === SPERREPELKES_PLOEGNAAM ? " 🎉" : "");
 
-    body.appendChild(el("div", {
-      class: "ploeg-matchup",
-      text: `${thuisTekst}  ${laatste.puntenThuis} - ${laatste.puntenUit}  ${uitTekst}`
+    body.appendChild(buildMatchupBlok({
+      thuisTekst,
+      uitTekst,
+      scoreTekst: `${laatste.puntenThuis} - ${laatste.puntenUit}`
     }));
   }
 
   if (rankingRijen.length > 0) {
     if (heeftIets) body.appendChild(el("hr", { class: "speeldag-divider" }));
     heeftIets = true;
-    const titel = laatste && laatste.speeldag ? `Stand na speeldag ${laatste.speeldag}` : "Stand";
-    body.appendChild(el("div", { class: "ranking-sectie-titel", text: titel }));
+    // Eindstand pas zodra ALLE ploegen hun 18 matchen gespeeld hebben.
+    const eindstand = rankingRijen.length > 0 && rankingRijen.every((r) => Number(r.matchen) === 18);
+    body.appendChild(el("div", { class: "ranking-sectie-titel", text: eindstand ? "Eindstand" : "Tussenstand" }));
 
     const table = el("table", { class: "ploeg-stand-table" });
-    const thead = el("thead", {}, el("tr", {}, ["#", "Ploeg", "M", "Pt", "Saldo"].map((h) => el("th", { text: h }))));
+    const thead = el("thead", {}, el("tr", {}, ["#", "Ploeg", "M", "Ptn", "Saldo"].map((h) => el("th", { text: h }))));
     const tbody = el("tbody");
     rankingRijen.forEach((r) => {
       const isSperrepelkes = r.ploeg === SPERREPELKES_PLOEGNAAM;
@@ -1094,20 +1108,8 @@ function renderHome(perReeks, extra, alleSpelersRanking, rangschikkingPerReeks) 
     wrap.appendChild(banner);
   }
 
-  // ---------- Uitklapbare kaartjes onderaan: ploeg, cup, records ----------
+  // ---------- Uitklapbare kaartjes onderaan: cup, records, ploeg (laatste) ----------
   const kaarten = el("div", { class: "home-kaarten" });
-
-  if (extra.kalenderPloeg || extra.rankingPloeg) {
-    const wedstrijden = extra.kalenderPloeg ? parseKalenderPloeg(extra.kalenderPloeg) : [];
-    const rankingRijen = extra.rankingPloeg ? parseRankingPloeg(extra.rankingPloeg) : [];
-
-    if (wedstrijden.length > 0 || rankingRijen.length > 0) {
-      kaarten.appendChild(buildAccordionCard(
-        "Sperrepelkesploeg", "", buildPloegBody(wedstrijden, rankingRijen),
-        { icoon: "🏆", titelKlasse: "accordion-titel accordion-titel-groot-gecentreerd" }
-      ));
-    }
-  }
 
   if (extra.cup) {
     const map = bewerkingsdatumRowsToMap(extra.cup);
@@ -1199,6 +1201,19 @@ function renderHome(perReeks, extra, alleSpelersRanking, rangschikkingPerReeks) 
       kaarten.appendChild(buildAccordionCard(
         "Rankings", "", body,
         { icoon: "🏅", titelKlasse: "accordion-titel accordion-titel-groot-gecentreerd" }
+      ));
+    }
+  }
+
+  // ---------- Sperrepelkesploeg (helemaal als laatste) ----------
+  if (extra.kalenderPloeg || extra.rankingPloeg) {
+    const wedstrijden = extra.kalenderPloeg ? parseKalenderPloeg(extra.kalenderPloeg) : [];
+    const rankingRijen = extra.rankingPloeg ? parseRankingPloeg(extra.rankingPloeg) : [];
+
+    if (wedstrijden.length > 0 || rankingRijen.length > 0) {
+      kaarten.appendChild(buildAccordionCard(
+        "Sperrepelkesploeg", "", buildPloegBody(wedstrijden, rankingRijen),
+        { icoon: "🏆", titelKlasse: "accordion-titel accordion-titel-groot-gecentreerd" }
       ));
     }
   }
