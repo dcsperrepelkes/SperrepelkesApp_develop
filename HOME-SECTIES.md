@@ -2,7 +2,7 @@
 
 De homepagina toont sinds deze update, naast "Volgende speeldag", ook een
 reeks **optionele** uitklapbare kaartjes: Laatste nieuws, Sperrepelkesploeg,
-Sperrepelkes CUP, Ranking (checkout/180's), en een Sponsor-banner onderaan.
+Sperrepelkes CUP, Nevenklassementen (checkout/180's), en een Sponsor-banner onderaan.
 
 **Elke sectie is optioneel.** Heb je een tabblad nog niet aangemaakt (of
 laat je de placeholder-URL in `config.js` staan), dan verschijnt die sectie
@@ -58,9 +58,9 @@ Laat een rij gewoon weg als je die info (nog) niet hebt.
 | Locatie | Ons lokaal |
 | Info | Inschrijven kan tot 1 maart |
 
-### 🏆 Rankings (geen apart tabblad!)
+### 🏆 Nevenklassementen (geen apart tabblad!)
 
-De Rankings-kaart (podium met top 3 hoogste checkout + top 3 meeste 180's)
+De Nevenklassementen-kaart (podium met top 3 hoogste checkout + top 3 meeste 180's)
 haalt zijn data **rechtstreeks uit de 4 bestaande rangschikking-sheets**
 (Reeks A, B, C, D) die je toch al gebruikt voor de Rangschikking-tab.
 
@@ -88,7 +88,7 @@ Gedrag:
 - Heeft geen enkele speler een waarde voor checkout (of voor 180's), dan
   verdwijnt enkel dat ene podium — het andere blijft gewoon staan.
 - Heeft **geen enkele speler** data voor checkout **én** 180's, dan
-  verschijnt de hele Rankings-kaart niet op de homepagina.
+  verschijnt de hele Nevenklassementen-kaart niet op de homepagina.
 
 ### Sponsor van de week (`sponsor`)
 Met kopregel — zet gewoon **al je sponsors onder elkaar**, één rij per sponsor:

@@ -651,12 +651,17 @@ function kiesSponsorVanDeWeek(sponsors) {
 }
 
 /** Een uitklapbaar kaartje: dichtgeklapt toont het enkel titel + samenvatting. */
-function buildAccordionCard(titel, samenvatting, bodyNode, { icoon = "", samenvattingKlasse = "accordion-samenvatting", chevronKlasse = "accordion-chevron" } = {}) {
+function buildAccordionCard(titel, samenvatting, bodyNode, {
+  icoon = "",
+  samenvattingKlasse = "accordion-samenvatting",
+  chevronKlasse = "accordion-chevron accordion-chevron-groot",
+  titelKlasse = "accordion-titel"
+} = {}) {
   const card = el("div", { class: "accordion-card" });
   const header = el("button", { class: "accordion-header", type: "button" });
 
   const titelblok = el("div", { class: "accordion-titelblok" });
-  titelblok.appendChild(el("div", { class: "accordion-titel", text: icoon ? `${icoon} ${titel}` : titel }));
+  titelblok.appendChild(el("div", { class: titelKlasse, text: icoon ? `${icoon} ${titel}` : titel }));
   const samenvattingEl = samenvatting ? el("div", { class: samenvattingKlasse, text: samenvatting }) : null;
   if (samenvattingEl) titelblok.appendChild(samenvattingEl);
   header.appendChild(titelblok);
@@ -759,13 +764,6 @@ function cupSamenvatting(map) {
   return "Tik voor details";
 }
 
-function rankingSamenvatting(checkoutGroepen, achttienenGroepen) {
-  const delen = [];
-  if (checkoutGroepen.length > 0) delen.push(`🎯 ${checkoutGroepen[0].spelers[0].speler}`);
-  if (achttienenGroepen.length > 0) delen.push(`🔥 ${achttienenGroepen[0].spelers[0].speler}`);
-  return delen.length > 0 ? delen.join("  ·  ") : "Nog geen gegevens";
-}
-
 function buildSponsorBanner(sponsor) {
   const banner = el("div", { class: "sponsor-banner" });
   banner.appendChild(el("div", { class: "sponsor-label", text: "Sponsor van de week" }));
@@ -849,8 +847,7 @@ function renderHome(perReeks, extra, alleSpelersRanking) {
         "Laatste nieuws", items[0].titel, buildNieuwsBody(items),
         {
           icoon: "📰",
-          samenvattingKlasse: "nieuws-samenvatting-titel",
-          chevronKlasse: "accordion-chevron accordion-chevron-groot"
+          samenvattingKlasse: "nieuws-samenvatting-titel"
         }
       ));
     }
@@ -940,17 +937,26 @@ function renderHome(perReeks, extra, alleSpelersRanking) {
           class: "ranking-sectie-titel",
           text: "Proxy Delhaize Bambrugge Checkout\u00A0Championship"
         }));
+        body.appendChild(el("div", {
+          class: "ranking-sectie-uitleg",
+          text: "Dit klassement rangschikt de spelers op basis van hun hoogste uitworp."
+        }));
         body.appendChild(buildPodium(checkoutGroepen, ""));
       }
 
       if (achttienenGroepen.length > 0) {
         if (checkoutGroepen.length > 0) body.appendChild(el("hr", { class: "speeldag-divider" }));
         body.appendChild(el("div", { class: "ranking-sectie-titel", text: "Brouwerij Huyghe 180-Trophy" }));
+        body.appendChild(el("div", {
+          class: "ranking-sectie-uitleg",
+          text: "Dit klassement rangschikt alle spelers die een 180 hebben gegooid."
+        }));
         body.appendChild(buildPodium(achttienenGroepen, "x"));
       }
 
       kaarten.appendChild(buildAccordionCard(
-        "Rankings", rankingSamenvatting(checkoutGroepen, achttienenGroepen), body, { icoon: "🏆" }
+        "Nevenklassementen", "", body,
+        { icoon: "🏆", titelKlasse: "accordion-titel accordion-titel-groot-gecentreerd" }
       ));
     }
   }

@@ -229,6 +229,11 @@ main#content {
   font-weight: 700;
   font-size: 0.92rem;
 }
+.accordion-titel-groot-gecentreerd {
+  font-size: 1.05rem;
+  text-align: center;
+  width: 100%;
+}
 .accordion-samenvatting {
   font-size: 0.8rem;
   color: var(--on-surface-variant);
@@ -282,10 +287,15 @@ main#content {
   font-weight: 700;
   font-size: 0.82rem;
   color: var(--primary);
-  margin: 10px 0 10px;
+  margin: 10px 0 4px;
 }
 @media (prefers-color-scheme: dark) { .ranking-sectie-titel { color: var(--secondary); } }
 .ranking-sectie-titel:first-child { margin-top: 0; }
+.ranking-sectie-uitleg {
+  font-size: 0.76rem;
+  color: var(--on-surface-variant);
+  margin: 0 0 10px;
+}
 
 .podium {
   display: flex;
