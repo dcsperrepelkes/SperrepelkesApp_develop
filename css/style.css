@@ -382,6 +382,52 @@ main#content {
 }
 @media (prefers-color-scheme: dark) { .rankings-link { color: var(--secondary); } }
 
+/* ---------- Home: Sperrepelkesploeg-kaartje ---------- */
+.ploeg-speeldag {
+  font-size: 0.78rem;
+  color: var(--on-surface-variant);
+  margin-bottom: 4px;
+}
+.ploeg-matchup {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--on-surface);
+}
+.ploeg-locatie {
+  font-size: 0.78rem;
+  color: var(--on-surface-variant);
+  margin-top: 2px;
+}
+
+table.ploeg-stand-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  table-layout: fixed;
+}
+table.ploeg-stand-table th {
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 6px 4px;
+  text-align: center;
+}
+table.ploeg-stand-table th:nth-child(2) { text-align: left; padding-left: 8px; }
+table.ploeg-stand-table td {
+  padding: 6px 4px;
+  text-align: center;
+  font-size: 0.76rem;
+  border-bottom: 1px solid var(--outline);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+table.ploeg-stand-table td.ploeg-naam-cel { text-align: left; padding-left: 8px; }
+table.ploeg-stand-table tr.ploeg-eigen-rij { font-weight: 700; }
+table.ploeg-stand-table tr.ploeg-eigen-rij td { color: var(--primary); }
+@media (prefers-color-scheme: dark) { table.ploeg-stand-table tr.ploeg-eigen-rij td { color: var(--secondary); } }
+
 /* ---------- Home: sponsorbanner ---------- */
 .sponsor-banner {
   margin-top: 18px;

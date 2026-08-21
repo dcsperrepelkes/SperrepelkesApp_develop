@@ -69,23 +69,30 @@ const KOLOM_BREEDTE = {
  *
  *  Verwachte kolommen per tabblad (zie README-web.md voor het volledige
  *  voorbeeld):
- *   - nieuws:     Datum, Titel, Tekst, Link (Link optioneel)
- *   - ploeg:      2 kolommen zonder kopregel: label, waarde
- *                 (bv. "Volgende wedstrijd" | "Sperrepelkes A - KDC Leiestreek")
- *   - cup:        2 kolommen zonder kopregel: label, waarde
- *                 (bv. "Volgende datum" | "14/03/2026")
- *   - sponsor:    Naam, Tekst, Website, Afbeelding (allemaal optioneel
- *                 behalve Naam; Afbeelding = directe beeld-URL, bv. via
- *                 imgur.com; eerste rij met een Naam wordt getoond)
+ *   - nieuws:         Datum, Titel, Tekst, Link (Link optioneel)
+ *   - kalenderPloeg:  Speeldag, Datum, Thuisploeg, punten thuisploeg,
+ *                     punten uitploeg, Uitploeg, Speellocatie, Adres
+ *   - rankingPloeg:   Ranking, Ploeg, Matchen, Punten, Saldo
+ *   - cup:            2 kolommen zonder kopregel: label, waarde
+ *                     (bv. "Volgende datum" | "14/03/2026")
+ *   - sponsor:        Naam, Tekst, Website, Afbeelding (allemaal optioneel
+ *                     behalve Naam; Afbeelding = directe beeld-URL, bv. via
+ *                     imgur.com; eerste rij met een Naam wordt getoond)
  *
- *  De "Ranking"-sectie (hoogste checkout / meeste 180's) heeft GEEN eigen
- *  tabblad — die data wordt rechtstreeks uit de 4 bestaande
- *  rangschikking-sheets (A/B/C/D) gehaald, kolom Q (hoogste uitworp) en
- *  kolom R (aantal 180's). Zie RANKING_KOLOM hieronder.
+ *  De "Ranking"-sectie (hoogste checkout / meeste 180's) en "Rankings"
+ *  (top 3 per reeks) hebben GEEN eigen tabblad — die data wordt
+ *  rechtstreeks uit de 4 bestaande rangschikking-sheets (A/B/C/D)
+ *  gehaald. Zie RANKING_KOLOM hieronder.
+ *
+ *  Naam van de club-vertegenwoordiging: DC De Sperrepelkes (gebruikt om te
+ *  bepalen of "onze" ploeg gewonnen heeft, zie SPERREPELKES_PLOEGNAAM).
  * ========================================================================= */
+const SPERREPELKES_PLOEGNAAM = "DC De Sperrepelkes";
+
 const EXTRA_URLS = {
   nieuws: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSI02lGel1v0PTsasuhZLBy70jegogINtIgPyV2WXOuMBAOlQ80Qxf47tCOHDoLk9Q8_op_ppYaikzN/pub?gid=762873295&single=true&output=csv",
-  ploeg: "https://docs.google.com/spreadsheets/d/e/VUL-HIER-JOUW-ID-IN/pub?gid=0&single=true&output=csv",
+  kalenderPloeg: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQqiTI5mKPtJG8CsOodk8v0dfgMldct2d-dCejkMsxJtJV0cnoC4P1qbCc3LPBclNpdbKCiAwNqQKYE/pub?gid=1979734072&single=true&output=csv",
+  rankingPloeg: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQqiTI5mKPtJG8CsOodk8v0dfgMldct2d-dCejkMsxJtJV0cnoC4P1qbCc3LPBclNpdbKCiAwNqQKYE/pub?gid=1333135515&single=true&output=csv",
   cup: "https://docs.google.com/spreadsheets/d/e/VUL-HIER-JOUW-ID-IN/pub?gid=0&single=true&output=csv",
   sponsor: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSI02lGel1v0PTsasuhZLBy70jegogINtIgPyV2WXOuMBAOlQ80Qxf47tCOHDoLk9Q8_op_ppYaikzN/pub?gid=1544703726&single=true&output=csv"
 };
@@ -618,6 +625,88 @@ function parseReeksRanking(rows) {
     .sort((a, b) => a.plaats - b.plaats);
 }
 
+/** Kolomindex opzoeken op naam (ongevoelig voor hoofdletters/spaties). */
+function kolomIndex(header, naam) {
+  return header.findIndex((h) => (h || "").trim().toLowerCase() === naam.toLowerCase());
+}
+
+/**
+ * Parseert het "Kalender_Ploeg"-tabblad: Speeldag, Datum, Thuisploeg,
+ * punten thuisploeg, punten uitploeg, Uitploeg, Speellocatie, Adres.
+ */
+function parseKalenderPloeg(rows) {
+  if (rows.length === 0) return [];
+  const header = rows[0];
+  const iSpeeldag = kolomIndex(header, "Speeldag");
+  const iDatum = kolomIndex(header, "Datum");
+  const iThuis = kolomIndex(header, "Thuisploeg");
+  const iPtThuis = kolomIndex(header, "punten thuisploeg");
+  const iPtUit = kolomIndex(header, "punten uitploeg");
+  const iUit = kolomIndex(header, "Uitploeg");
+  const iLocatie = kolomIndex(header, "Speellocatie");
+
+  return rows.slice(1)
+    .map((row) => {
+      const datumTekst = (row[iDatum] || "").trim();
+      return {
+        speeldag: (row[iSpeeldag] || "").trim(),
+        datumTekst,
+        datum: extractDatum(datumTekst),
+        thuisploeg: (row[iThuis] || "").trim(),
+        puntenThuis: (row[iPtThuis] || "").trim(),
+        puntenUit: (row[iPtUit] || "").trim(),
+        uitploeg: (row[iUit] || "").trim(),
+        speellocatie: (row[iLocatie] || "").trim()
+      };
+    })
+    .filter((w) => w.thuisploeg && w.uitploeg);
+}
+
+/** Eerstvolgende wedstrijd (datum >= vandaag), of null. */
+function volgendePloegWedstrijd(wedstrijden) {
+  const vandaag = vandaagStart();
+  let beste = null;
+  for (const w of wedstrijden) {
+    if (!w.datum) continue;
+    if (w.datum >= vandaag && (!beste || w.datum < beste.datum)) beste = w;
+  }
+  return beste;
+}
+
+/** Laatst ingevulde wedstrijd (beide scores ingevuld), meest recente datum eerst, of null. */
+function laatstePloegUitslag(wedstrijden) {
+  let beste = null;
+  for (const w of wedstrijden) {
+    if (!w.datum || w.puntenThuis === "" || w.puntenUit === "") continue;
+    if (!beste || w.datum > beste.datum) beste = w;
+  }
+  return beste;
+}
+
+/**
+ * Parseert het "Ranking_Ploeg"-tabblad: Ranking, Ploeg, Matchen, Punten, Saldo.
+ */
+function parseRankingPloeg(rows) {
+  if (rows.length === 0) return [];
+  const header = rows[0];
+  const iRanking = kolomIndex(header, "Ranking");
+  const iPloeg = kolomIndex(header, "Ploeg");
+  const iMatchen = kolomIndex(header, "Matchen");
+  const iPunten = kolomIndex(header, "Punten");
+  const iSaldo = kolomIndex(header, "Saldo");
+  if (iRanking < 0 || iPloeg < 0) return [];
+
+  return rows.slice(1)
+    .map((row) => ({
+      ranking: (row[iRanking] || "").trim(),
+      ploeg: (row[iPloeg] || "").trim(),
+      matchen: iMatchen >= 0 ? (row[iMatchen] || "").trim() : "",
+      punten: iPunten >= 0 ? (row[iPunten] || "").trim() : "",
+      saldo: iSaldo >= 0 ? (row[iSaldo] || "").trim() : ""
+    }))
+    .filter((r) => r.ploeg);
+}
+
 /**
  * Groepeert spelers per podiumrang op basis van [veld]: alle spelers met
  * exact dezelfde (hoogste 3 verschillende) waarden komen samen in dezelfde
@@ -791,13 +880,80 @@ function buildReeksLijst(top3Lijst) {
   return lijst;
 }
 
-function ploegSamenvatting(map) {
-  if (map["Volgende wedstrijd"] && map["Volgende wedstrijd datum"]) {
-    return `Volgende: ${map["Volgende wedstrijd"]} (${map["Volgende wedstrijd datum"]})`;
-  }
-  if (map["Ranking"]) return `Ranking: ${map["Ranking"]}`;
-  return "Tik voor details";
+/** bv. "Speeldag 2 - zaterdag 19/09/2026" */
+function formatSpeeldagDatum(wedstrijd) {
+  const stukken = [];
+  if (wedstrijd.speeldag) stukken.push(`Speeldag ${wedstrijd.speeldag}`);
+  if (wedstrijd.datum) stukken.push(formatDagDatum(wedstrijd.datum));
+  else if (wedstrijd.datumTekst) stukken.push(wedstrijd.datumTekst);
+  return stukken.join(" - ");
 }
+
+/** Bouwt de volledige inhoud van het "Sperrepelkesploeg"-kaartje. */
+function buildPloegBody(wedstrijden, rankingRijen) {
+  const body = el("div");
+  let heeftIets = false;
+
+  const volgende = volgendePloegWedstrijd(wedstrijden);
+  if (volgende) {
+    heeftIets = true;
+    body.appendChild(el("div", { class: "ranking-sectie-titel", text: "Volgende wedstrijd" }));
+    body.appendChild(el("div", { class: "ploeg-speeldag", text: formatSpeeldagDatum(volgende) }));
+    body.appendChild(el("div", { class: "ploeg-matchup", text: `${volgende.thuisploeg} VS ${volgende.uitploeg}` }));
+    if (volgende.speellocatie) {
+      body.appendChild(el("div", { class: "ploeg-locatie", text: volgende.speellocatie }));
+    }
+  }
+
+  const laatste = laatstePloegUitslag(wedstrijden);
+  if (laatste) {
+    if (heeftIets) body.appendChild(el("hr", { class: "speeldag-divider" }));
+    heeftIets = true;
+    body.appendChild(el("div", { class: "ranking-sectie-titel", text: "Uitslag laatste wedstrijd" }));
+    body.appendChild(el("div", { class: "ploeg-speeldag", text: formatSpeeldagDatum(laatste) }));
+
+    const thuisWint = Number(laatste.puntenThuis) > Number(laatste.puntenUit);
+    const uitWint = Number(laatste.puntenUit) > Number(laatste.puntenThuis);
+    const thuisTekst = laatste.thuisploeg + (thuisWint && laatste.thuisploeg === SPERREPELKES_PLOEGNAAM ? " 🎉" : "");
+    const uitTekst = laatste.uitploeg + (uitWint && laatste.uitploeg === SPERREPELKES_PLOEGNAAM ? " 🎉" : "");
+
+    body.appendChild(el("div", {
+      class: "ploeg-matchup",
+      text: `${thuisTekst}  ${laatste.puntenThuis} - ${laatste.puntenUit}  ${uitTekst}`
+    }));
+  }
+
+  if (rankingRijen.length > 0) {
+    if (heeftIets) body.appendChild(el("hr", { class: "speeldag-divider" }));
+    heeftIets = true;
+    const titel = laatste && laatste.speeldag ? `Stand na speeldag ${laatste.speeldag}` : "Stand";
+    body.appendChild(el("div", { class: "ranking-sectie-titel", text: titel }));
+
+    const table = el("table", { class: "ploeg-stand-table" });
+    const thead = el("thead", {}, el("tr", {}, ["#", "Ploeg", "M", "Pt", "Saldo"].map((h) => el("th", { text: h }))));
+    const tbody = el("tbody");
+    rankingRijen.forEach((r) => {
+      const isSperrepelkes = r.ploeg === SPERREPELKES_PLOEGNAAM;
+      tbody.appendChild(el("tr", { class: isSperrepelkes ? "ploeg-eigen-rij" : "" }, [
+        el("td", { text: r.ranking }),
+        el("td", { class: "ploeg-naam-cel", text: r.ploeg }),
+        el("td", { text: r.matchen }),
+        el("td", { text: r.punten }),
+        el("td", { text: r.saldo })
+      ]));
+    });
+    table.appendChild(thead);
+    table.appendChild(tbody);
+    body.appendChild(table);
+  }
+
+  if (!heeftIets) {
+    body.appendChild(el("div", { class: "empty-state", text: "Nog geen gegevens beschikbaar." }));
+  }
+
+  return body;
+}
+
 
 function cupSamenvatting(map) {
   if (map["Volgende datum"]) return `Volgende CUP: ${map["Volgende datum"]}`;
@@ -941,17 +1097,14 @@ function renderHome(perReeks, extra, alleSpelersRanking, rangschikkingPerReeks) 
   // ---------- Uitklapbare kaartjes onderaan: ploeg, cup, records ----------
   const kaarten = el("div", { class: "home-kaarten" });
 
-  if (extra.ploeg) {
-    const map = bewerkingsdatumRowsToMap(extra.ploeg);
-    if (Object.keys(map).length > 0) {
+  if (extra.kalenderPloeg || extra.rankingPloeg) {
+    const wedstrijden = extra.kalenderPloeg ? parseKalenderPloeg(extra.kalenderPloeg) : [];
+    const rankingRijen = extra.rankingPloeg ? parseRankingPloeg(extra.rankingPloeg) : [];
+
+    if (wedstrijden.length > 0 || rankingRijen.length > 0) {
       kaarten.appendChild(buildAccordionCard(
-        "Sperrepelkesploeg",
-        ploegSamenvatting(map),
-        buildLabelWaardeBody(map, [
-          "Laatste wedstrijd", "Laatste wedstrijd datum", "Laatste wedstrijd uitslag",
-          "Volgende wedstrijd", "Volgende wedstrijd datum", "Ranking"
-        ]),
-        { icoon: "🏆" }
+        "Sperrepelkesploeg", "", buildPloegBody(wedstrijden, rankingRijen),
+        { icoon: "🏆", titelKlasse: "accordion-titel accordion-titel-groot-gecentreerd" }
       ));
     }
   }
