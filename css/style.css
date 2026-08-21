@@ -347,7 +347,7 @@ main#content {
 .rode-lantaarn {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 6px;
   margin-top: 12px;
   font-size: 0.8rem;
@@ -360,6 +360,7 @@ main#content {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-top: 12px;
   padding: 2px 0 4px;
 }
 .ranking-lijst-item {
@@ -373,11 +374,11 @@ main#content {
 .rankings-link {
   display: block;
   text-align: center;
-  margin-top: 8px;
+  margin: 16px 0;
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--primary);
-  text-decoration: none;
+  text-decoration: underline;
 }
 @media (prefers-color-scheme: dark) { .rankings-link { color: var(--secondary); } }
 

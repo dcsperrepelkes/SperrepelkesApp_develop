@@ -610,7 +610,9 @@ function parseReeksRanking(rows) {
   return rows.slice(1)
     .map((row) => ({
       plaats: Number((row[iPlaats] || "").trim()),
-      speler: (row[iSpeler] || "").trim()
+      speler: (row[iSpeler] || "").trim(),
+      // Kolom C (index 2) = aantal gespeelde wedstrijden, voor tussenstand/eindstand.
+      totaal: Number((row[2] || "").trim())
     }))
     .filter((r) => r.speler && !isNaN(r.plaats))
     .sort((a, b) => a.plaats - b.plaats);
@@ -1011,7 +1013,8 @@ function renderHome(perReeks, extra, alleSpelersRanking, rangschikkingPerReeks) 
         const lijst = parseReeksRanking(rangschikkingPerReeks[r] || []);
         if (lijst.length === 0) return null;
         const laatste = lijst.reduce((max, cur) => (cur.plaats > max.plaats ? cur : max), lijst[0]);
-        return { reeks: r, top3: lijst.slice(0, 3), laatste };
+        const eindstand = lijst.every((s) => !isNaN(s.totaal) && s.totaal >= 15);
+        return { reeks: r, top3: lijst.slice(0, 3), laatste, eindstand };
       })
       .filter(Boolean);
 
@@ -1020,7 +1023,8 @@ function renderHome(perReeks, extra, alleSpelersRanking, rangschikkingPerReeks) 
 
       reeksBlokken.forEach((blok, i) => {
         if (i !== 0) body.appendChild(el("hr", { class: "speeldag-divider" }));
-        body.appendChild(el("div", { class: "ranking-sectie-titel", text: `${blok.reeks}-Reeks` }));
+        const titelTekst = `${blok.reeks}-Reeks - ${blok.eindstand ? "eindstand" : "tussenstand"} podium`;
+        body.appendChild(el("div", { class: "ranking-sectie-titel", text: titelTekst }));
         body.appendChild(buildReeksLijst(blok.top3));
 
         const lantaarn = el("div", { class: "rode-lantaarn" });
