@@ -969,9 +969,10 @@ function buildAccordionCard(titel, samenvatting, bodyNode, {
   icoon = "",
   samenvattingKlasse = "accordion-samenvatting",
   chevronKlasse = "accordion-chevron accordion-chevron-groot",
-  titelKlasse = "accordion-titel"
+  titelKlasse = "accordion-titel",
+  wit = false
 } = {}) {
-  const card = el("div", { class: "accordion-card" });
+  const card = el("div", { class: wit ? "accordion-card accordion-card-wit" : "accordion-card" });
   const header = el("button", { class: "accordion-header", type: "button" });
 
   const titelblok = el("div", { class: "accordion-titelblok" });
@@ -1419,7 +1420,7 @@ function renderHome(perReeks, extra, alleSpelersRanking, rangschikkingPerReeks) 
 
       kaarten.appendChild(buildAccordionCard(
         "Rankings", "", body,
-        { icoon: "🏅", titelKlasse: "accordion-titel accordion-titel-groot-gecentreerd" }
+        { icoon: "🏅", titelKlasse: "accordion-titel accordion-titel-groot-gecentreerd", wit: true }
       ));
     }
   }
