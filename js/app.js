@@ -1221,32 +1221,34 @@ async function loadHome(forceRefresh) {
   const heeftAlInhoud = homeView.querySelector(".home-content");
   if (!heeftAlInhoud) loadingEl.classList.remove("hidden");
 
-  // Kalender van elke reeks ophalen (gebruikt dezelfde 30-min-cache).
+  // Alle 13 databronnen (4x kalender, 4x rangschikking, + de optionele
+  // extra sheets) tegelijk starten in ÉÉN Promise.all — niet in aparte
+  // fases na elkaar. Zo wordt de totale wachttijd bepaald door de
+  // traagste ENKELE aanvraag, niet door de som van alle fases samen.
   const perReeks = {};
-  const fouten = [];
-  await Promise.all(REEKSEN.map(async (r) => {
-    const result = await fetchSheet("KALENDER", r, forceRefresh);
-    if (!result.ok) fouten.push(result.message);
-    perReeks[r] = parseKalender(result.rows);
-  }));
-
-  // Rangschikking van elke reeks ophalen: nodig voor zowel Nevenklassementen
-  // (checkout/180's, club-breed) als de Rankings-kaart (top 3 per reeks).
   const rangschikkingPerReeks = {};
-  await Promise.all(REEKSEN.map(async (r) => {
-    const result = await fetchSheet("RANGSCHIKKING", r, forceRefresh);
-    rangschikkingPerReeks[r] = result.ok ? result.rows : [];
-  }));
+  const extra = {};
+  const fouten = [];
+
+  await Promise.all([
+    ...REEKSEN.map(async (r) => {
+      const result = await fetchSheet("KALENDER", r, forceRefresh);
+      if (!result.ok) fouten.push(result.message);
+      perReeks[r] = parseKalender(result.rows);
+    }),
+    ...REEKSEN.map(async (r) => {
+      const result = await fetchSheet("RANGSCHIKKING", r, forceRefresh);
+      rangschikkingPerReeks[r] = result.ok ? result.rows : [];
+    }),
+    ...Object.entries(EXTRA_URLS).map(async ([key, url]) => {
+      extra[key] = await fetchExtraSheet(key, url, forceRefresh);
+    })
+  ]);
+
   let alleSpelersRanking = [];
   REEKSEN.forEach((r) => {
     alleSpelersRanking = alleSpelersRanking.concat(parseRankingExtra(rangschikkingPerReeks[r]));
   });
-
-  // Optionele extra secties ophalen (enkel wat geconfigureerd is).
-  const extra = {};
-  await Promise.all(Object.entries(EXTRA_URLS).map(async ([key, url]) => {
-    extra[key] = await fetchExtraSheet(key, url, forceRefresh);
-  }));
 
   loadingEl.classList.add("hidden");
   refreshBtn.classList.remove("spinning");
