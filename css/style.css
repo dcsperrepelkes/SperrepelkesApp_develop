@@ -135,9 +135,25 @@ main#content {
 .loading {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 0;
+  gap: 14px;
+  padding: 40px 24px;
+  text-align: center;
+}
+.loading-tekst {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.loading-tekst strong {
+  font-size: 0.95rem;
+  color: var(--on-background);
+}
+.loading-tekst span {
+  font-size: 0.82rem;
+  color: var(--on-surface-variant);
 }
 .spinner {
   width: 36px;
