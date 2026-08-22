@@ -226,10 +226,6 @@ main#content {
   border-radius: 12px;
   overflow: hidden;
 }
-.accordion-card-wit {
-  background: var(--surface);
-  border: 1px solid var(--outline);
-}
 .accordion-header {
   width: 100%;
   display: flex;

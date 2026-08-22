@@ -7,11 +7,11 @@
  *  uitleg hoe je die links maakt.
  * ========================================================================= */
 const CLUB_NAAM = "Dartsclub De Sperrepelkes";
-const CACHE_GELDIGHEID_MINUTEN = 30;
+const CACHE_GELDIGHEID_MINUTEN = 15;
 
 // Zet op false voor de live versie: verbergt de handmatige vernieuwknop op
 // de Home-pagina (die daar sowieso overbodig is, want alles ververst er
-// automatisch elke 30 minuten). Zet op true tijdens het testen om altijd
+// automatisch elke 15 minuten). Zet op true tijdens het testen om altijd
 // meteen te kunnen forceren. Geldt enkel voor Home — op Kalender en
 // Rangschikking blijft de knop altijd zichtbaar.
 const TOON_VERVERSKNOP_HOME = true;
@@ -969,10 +969,9 @@ function buildAccordionCard(titel, samenvatting, bodyNode, {
   icoon = "",
   samenvattingKlasse = "accordion-samenvatting",
   chevronKlasse = "accordion-chevron accordion-chevron-groot",
-  titelKlasse = "accordion-titel",
-  wit = false
+  titelKlasse = "accordion-titel"
 } = {}) {
-  const card = el("div", { class: wit ? "accordion-card accordion-card-wit" : "accordion-card" });
+  const card = el("div", { class: "accordion-card" });
   const header = el("button", { class: "accordion-header", type: "button" });
 
   const titelblok = el("div", { class: "accordion-titelblok" });
@@ -1420,7 +1419,7 @@ function renderHome(perReeks, extra, alleSpelersRanking, rangschikkingPerReeks) 
 
       kaarten.appendChild(buildAccordionCard(
         "Rankings", "", body,
-        { icoon: "🏅", titelKlasse: "accordion-titel accordion-titel-groot-gecentreerd", wit: true }
+        { icoon: "🏅", titelKlasse: "accordion-titel accordion-titel-groot-gecentreerd" }
       ));
     }
   }
